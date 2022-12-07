@@ -4,23 +4,50 @@ import QtQuick.LocalStorage 2.15
 
 Rectangle {
   property int id
+  property int boxWidth
+  property int boxHeight
+  property int boxX
+  property int boxY
   width: 200
   height: 120
   color: "transparent"
   border.color: "#b1dc1c"
   border.width: 1
-  radius: 5
+  radius: 4
+
+  Rectangle {
+    color: "transparent"
+
+    anchors {
+      fill: parent
+      leftMargin: 4
+      rightMargin: 4
+      topMargin: 4
+      bottomMargin: 4
+    }
+
+    Rectangle {
+      width: ((boxWidth / 100) * parent.width)
+      height: ((boxHeight / 100) * parent.height)
+      color: "transparent"
+      border.color: "#b1dc1c"
+      border.width: 1
+      radius: 4
+      x: ((boxX / 100) * parent.width)
+      y: ((boxY / 100) * parent.height)
+    }
+  }
 
   Button {
     id: hiddenWindowButton
-    // width: parent.width
-    // height: parent.height
+    width: parent.width
+    height: parent.height
     anchors.centerIn: parent
     visible: !editMode
     text: "item " + id
-    // background: Rectangle {
-    //     color: "transparent"
-    // }
+    background: Rectangle {
+      color: "transparent"
+    }
     onClicked: {
       print(id);
     }
@@ -42,7 +69,7 @@ Rectangle {
 
       db.transaction(
         function(tx) {
-          var test = tx.executeSql('DELETE FROM e_spaces WHERE rowid = ' + id);
+          var test = tx.executeSql('DELETE FROM spaces WHERE rowid = ' + id);
           // print(test.rows[0].rowid);
         }
       )

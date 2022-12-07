@@ -79,12 +79,23 @@ PlasmaCore.Dialog {
 
           db.transaction(
             function(tx) {
+
+              tx.executeSql('CREATE TABLE IF NOT EXISTS spaces(width INTEGER, height INTEGER, x INTEGER, y INTEGER)');
+              // tx.executeSql('DROP TABLE spaces');
               
-              // var rs = tx.executeSql('SELECT rowid FROM e_spaces ORDER BY ROWID DESC LIMIT 1');
-              var insert = tx.executeSql('INSERT INTO e_spaces VALUES(?, ?) RETURNING rowid', [ 3, 4 ]);
+              // var rs = tx.executeSql('SELECT rowid FROM spaces ORDER BY ROWID DESC LIMIT 1');
+              var insert = tx.executeSql('INSERT INTO spaces VALUES(?, ?, ?, ?) RETURNING rowid', [ 50, 50, 0, 0 ]);
+
+              print(insert.rows[0].rowid)
 
               var component = Qt.createComponent("block.qml")
-              var object = component.createObject(flowLayout, {id: insert.rows[0].rowid});
+              var object = component.createObject(flowLayout, {
+                id: insert.rows[0].rowid,
+                boxWidth: 50,
+                boxHeight: 50,
+                boxX: 0,
+                boxY: 0
+              });
             }
           )
         }
@@ -95,6 +106,9 @@ PlasmaCore.Dialog {
         visible: restartButtonVisible
         onClicked: {
           print('edit');
+
+          // print(flowLayout.children[1])
+          // flowLayout.children[1].boxWidth = 100
         }
       }
       
@@ -153,9 +167,15 @@ PlasmaCore.Dialog {
 
             db.transaction(
               function(tx) {
-                var rs = tx.executeSql('SELECT rowid, * FROM e_spaces');
+                var rs = tx.executeSql('SELECT rowid, * FROM spaces');
                 for (var i = 0; i < rs.rows.length; i++) {
-                  var object = component.createObject(flowLayout, {id: rs.rows.item(i).rowid});
+                  var object = component.createObject(flowLayout, {
+                    id: rs.rows.item(i).rowid,
+                    boxWidth: rs.rows.item(i).width,
+                    boxHeight: rs.rows.item(i).height,
+                    boxX: rs.rows.item(i).x,
+                    boxY: rs.rows.item(i).y
+                  });
                   // print(rs.rows.item(i).rowid)
                 }
               }

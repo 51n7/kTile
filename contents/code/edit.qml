@@ -9,16 +9,22 @@ Rectangle {
   property var dragging: false
   property int cols: 6
   property int rows: 4
-  property int gap: 10
-  property int cellWidth: parent.width / cols
-  property int cellHeight: parent.height / rows
-  property int storeX: 0
-  property int storeY: 0
+  property double gap: 0
+  property double cellWidth: parent.width / cols
+  property double cellHeight: parent.height / rows
+  property double storeX: 0
+  property double storeY: 0
+  property double previewWidth: 0
+  property double previewHeight: 0
+  property double previewX: 0
+  property double previewY: 0
 
   id: edit
   color: "#EDEDEE"
   width: parent.width
   height: parent.height
+  x: 0
+  y: 0
 
   MouseArea {
     anchors.fill: parent
@@ -29,33 +35,50 @@ Rectangle {
       var getGridX = Math.floor(mouse.x / cellWidth);
       var getGridY = Math.floor(mouse.y / cellHeight);
 
-      if(!dragging || mouse.x < 0 || mouse.y < 0) {
+      // keep MouseArea values in bounds
+      // there's some weirdness with mouse position being tracked while dragging outside component
+      if(
+        mouse.x >= 0 &&
+        mouse.x <= parent.width &&
+        mouse.y >= 0 &&
+        mouse.y <= parent.height &&
+        getGridX < cols &&
+        getGridY < rows
+      ) {
+        if(!dragging) {
 
-        // mouse hover
-        hoveBox.x = ((cellWidth * getGridX) + (gap / 2))
-        hoveBox.y = ((cellHeight * getGridY) + (gap / 2))
-        hoveBox.width = (cellWidth - gap)
-        hoveBox.height = (cellHeight - gap)
-      } else {
+          // mouse hover
+          hoveBox.x = cellWidth * getGridX
+          hoveBox.y = cellHeight * getGridY
+          hoveBox.width = cellWidth
+          hoveBox.height = cellHeight
 
-        // mouse drag
-        var dirextionX = getGridX - storeX
-        var dirextionY = getGridY - storeY
+        } else {
 
-        var cellCountX = (dirextionX < 0 ? dirextionX * -1 : dirextionX) + 1
-        var cellCountY = (dirextionY < 0 ? dirextionY * -1 : dirextionY) + 1
+          // mouse drag
+          var dirextionX = getGridX - storeX
+          var dirextionY = getGridY - storeY
 
-        if(dirextionX < 1) {
-          hoveBox.x = ((cellWidth * getGridX) + (gap / 2))
+          var cellCountX = (dirextionX < 0 ? dirextionX * -1 : dirextionX) + 1
+          var cellCountY = (dirextionY < 0 ? dirextionY * -1 : dirextionY) + 1
+
+          if(dirextionX < 1) {
+            hoveBox.x = ((cellWidth * getGridX) + (gap / 2))
+            previewX = (cellWidth * getGridX) + (gap / 2)
+          }
+
+          if(dirextionY < 1) {
+            hoveBox.y = ((cellHeight * getGridY) + (gap / 2))
+            previewY = (cellHeight * getGridY) + (gap / 2)
+          }
+
+          hoveBox.width = ((cellWidth * cellCountX) - gap)
+          hoveBox.height = ((cellHeight * cellCountY) - gap)
+
+          previewWidth = ((cellWidth * cellCountX) - gap)
+          previewHeight = ((cellHeight * cellCountY) - gap)
+
         }
-
-        if(dirextionY < 1) {
-          hoveBox.y = ((cellHeight * getGridY) + (gap / 2))
-        }
-
-        hoveBox.width = ((cellWidth * cellCountX) - gap)
-        hoveBox.height = ((cellHeight * cellCountY) - gap)
-
       }
     }
     onClicked: {
@@ -72,18 +95,26 @@ Rectangle {
     }
     onReleased: {
       dragging = false
+
+      var preview = flowLayout.children[(id - 1)]
+
+      preview.boxWidth = (100 * previewWidth) / parent.width
+      preview.boxHeight = (100 * previewHeight) / parent.height
+      preview.boxX = (100 * previewX) / parent.width
+      preview.boxY = (100 * previewY) / parent.height
     }
   }
 
   Rectangle {
     id: hoveBox
-    width: 100
-    height: 100
+    width: 0
+    height: 0
     color: "red"
   }
 
   Canvas {
     anchors.fill : parent
+    visible: true
     onPaint: {
 
       var ctx = getContext("2d")
@@ -116,7 +147,7 @@ Rectangle {
       print(id);
       this.parent.destroy()
 
-      // update sqlite row with id and then destroy
+      // TODO: update sqlite row with id and then destroy
     }
   }
 }
