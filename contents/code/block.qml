@@ -20,6 +20,20 @@ Rectangle {
   border.width: 1
   radius: 4
 
+  function tileWindow(window) {
+    if (!window.normalWindow) return;
+
+    let screen = workspace.clientArea(KWin.MaximizeArea, workspace.activeScreen, window.desktop);
+    
+    let newWidth = ((boxWidth / 100) * screen.width)
+    let newHeight = ((boxHeight / 100) * screen.height)
+    let newX = ((boxX / 100) * screen.width)
+    let newY = ((boxY / 100) * screen.height)
+
+    window.setMaximize(false, false);
+    window.geometry = Qt.rect(newX, newY, newWidth, newHeight);
+  }
+
   MouseArea {
     anchors.fill: parent
     hoverEnabled: true
@@ -37,7 +51,9 @@ Rectangle {
         color: "transparent"
       }
       onClicked: {
-        print(id);
+        tileWindow(workspace.activeClient);
+
+        mainDialog.visible = false
       }
     }
 
