@@ -2,7 +2,6 @@ import QtQuick 2.0
 import QtQuick.Layouts 1.0
 import QtQuick.Window 2.12
 import QtQuick.Controls 2.12
-// import Qt.labs.folderlistmodel 2.15
 import org.kde.plasma.core 2.0 as PlasmaCore
 import org.kde.plasma.components 3.0 as PlasmaComponents
 import org.kde.kwin 2.0
@@ -18,7 +17,6 @@ PlasmaCore.Dialog {
   // property int columns: 6
   // property int rows: 4
   property bool editMode: false
-  property bool createMode: false
   property bool restartButtonVisible: true
 
   function loadConfig(){
@@ -47,7 +45,7 @@ PlasmaCore.Dialog {
         Layout.fillWidth: true
       }
 
-      Switch {
+      /*Switch {
         id: editToggle
         onToggled: editMode = !editMode
         indicator: Rectangle {
@@ -67,7 +65,7 @@ PlasmaCore.Dialog {
             // border.color: "black"
           }
         }
-      }
+      }*/
       
       PlasmaComponents.Button {
         icon.name: "list-add-symbolic"
@@ -101,14 +99,11 @@ PlasmaCore.Dialog {
         }
       }
 
-      PlasmaComponents.Button {
+      /*PlasmaComponents.Button {
         icon.name: "edit-entry"
         visible: restartButtonVisible
         onClicked: {
           print('edit');
-
-          // print(flowLayout.children[1])
-          // flowLayout.children[1].boxWidth = 100
         }
       }
       
@@ -118,7 +113,7 @@ PlasmaCore.Dialog {
         onClicked: {
           print('delete');
         }
-      }
+      }*/
       
       PlasmaComponents.Button {
         icon.name: "dialog-close"
@@ -176,40 +171,13 @@ PlasmaCore.Dialog {
                     boxX: rs.rows.item(i).x,
                     boxY: rs.rows.item(i).y
                   });
-                  // print(rs.rows.item(i).rowid)
                 }
               }
             )
-
-            // for (var i=0; i<5; i++) {
-            //   var object = component.createObject(flowLayout);
-            //   // object.x = (object.width + 10) * i;
-            // }
-          }
-        }
-      }
-
-      Rectangle {
-        id: edit
-        color: "red"
-        // border.width: 2
-        // border.color: "#EDEDEE"
-        // radius: 4
-        width: 100
-        height: 100
-        visible: createMode
-
-        PlasmaComponents.Button {
-          icon.name: "dialog-close"
-          anchors.top: parent.top
-          anchors.right: parent.right
-          onClicked: {
-            createMode = false;
           }
         }
       }
     }
-
   }
 
   Component.onCompleted: {

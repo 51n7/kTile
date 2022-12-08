@@ -84,9 +84,6 @@ Rectangle {
     onClicked: {
       print('onClicked')
     }
-    // onPressAndHold: {
-    //   print('onPressAndHold')
-    // }
     onPressed: {
       dragging = true
 
@@ -102,6 +99,14 @@ Rectangle {
       preview.boxHeight = (100 * previewHeight) / parent.height
       preview.boxX = (100 * previewX) / parent.width
       preview.boxY = (100 * previewY) / parent.height
+
+      var db = LocalStorage.openDatabaseSync("QDeclarativeExampleDB", "1.0", "The Example QML SQL!", 1000000);
+
+      db.transaction(
+        function(tx) {
+          tx.executeSql('UPDATE spaces SET width = '+ preview.boxWidth +', height = '+ preview.boxHeight +', x = '+ preview.boxX +', y = '+ preview.boxY +' WHERE rowid = ' + id);
+        }
+      )
     }
   }
 
@@ -146,8 +151,6 @@ Rectangle {
     onClicked: {
       print(id);
       this.parent.destroy()
-
-      // TODO: update sqlite row with id and then destroy
     }
   }
 }
