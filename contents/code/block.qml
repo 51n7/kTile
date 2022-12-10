@@ -1,12 +1,11 @@
 import QtQuick 2.0
 import QtQuick.Layouts 1.0
-// import QtQuick.Window 2.12
 import QtQuick.Controls 2.12
 import QtQuick.LocalStorage 2.15
 import org.kde.plasma.core 2.0 as PlasmaCore
 import org.kde.plasma.components 3.0 as PlasmaComponents
 
-Rectangle {
+PlasmaComponents.Button {
   property int id
   property double boxWidth
   property double boxHeight
@@ -15,10 +14,6 @@ Rectangle {
   
   width: 200
   height: 120
-  color: "transparent"
-  border.color: "#FFF"
-  border.width: 1
-  radius: 4
 
   function tileWindow(window) {
     if (!window.normalWindow) return;
@@ -35,30 +30,33 @@ Rectangle {
   }
 
   MouseArea {
-    anchors.fill: parent
-    hoverEnabled: true
+    property double pad: ((2 / 100) * parent.width) // 2% of parent.width
     property bool hovered: false
     onEntered: hovered = true
     onExited: hovered = false
 
-    Button {
-      id: hiddenWindowButton
-      width: parent.width
-      height: parent.height
-      anchors.centerIn: parent
-      text: "item " + id
-      background: Rectangle {
-        color: "transparent"
-      }
-      onClicked: {
-        tileWindow(workspace.activeClient);
+    anchors.margins: pad
+    anchors.fill: parent
+    hoverEnabled: true
 
-        mainDialog.visible = false
-      }
+    onClicked: {
+      tileWindow(workspace.activeClient);
+      mainDialog.visible = false
+    }
+
+    PlasmaComponents.Button {
+      width: ((boxWidth / 100) * parent.width)
+      height: ((boxHeight / 100) * parent.height)
+      x: ((boxX / 100) * parent.width)
+      y: ((boxY / 100) * parent.height)
+      // enabled: false
+      // opacity: 1
+      // background: Rectangle {
+      //   color: "red"
+      // }
     }
 
     RowLayout {
-      // anchors.centerIn: parent
       anchors.top: parent.top
       anchors.right: parent.right
       visible: parent.hovered
@@ -89,31 +87,6 @@ Rectangle {
           )
         }
       }
-    }
-  }
-
-  // preview of adjustable space
-  Rectangle {
-    color: "transparent"
-    property double pad: ((1.5 / 100) * parent.width)
-
-    anchors {
-      fill: parent
-      leftMargin: pad
-      rightMargin: pad
-      topMargin: pad
-      bottomMargin: pad
-    }
-
-    Rectangle {
-      width: ((boxWidth / 100) * parent.width)
-      height: ((boxHeight / 100) * parent.height)
-      color: "transparent"
-      border.color: "#FFF"
-      border.width: 1
-      radius: 4
-      x: ((boxX / 100) * parent.width)
-      y: ((boxY / 100) * parent.height)
     }
   }
 }

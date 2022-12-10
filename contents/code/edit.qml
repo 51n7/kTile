@@ -48,10 +48,10 @@ Rectangle {
         if(!dragging) {
 
           // mouse hover
-          hoveBox.x = cellWidth * getGridX
-          hoveBox.y = cellHeight * getGridY
-          hoveBox.width = cellWidth
-          hoveBox.height = cellHeight
+          hoverBox.x = cellWidth * getGridX
+          hoverBox.y = cellHeight * getGridY
+          hoverBox.width = cellWidth
+          hoverBox.height = cellHeight
 
         } else {
 
@@ -63,17 +63,17 @@ Rectangle {
           var cellCountY = (dirextionY < 0 ? dirextionY * -1 : dirextionY) + 1
 
           if(dirextionX < 1) {
-            hoveBox.x = ((cellWidth * getGridX) + (gap / 2))
+            hoverBox.x = ((cellWidth * getGridX) + (gap / 2))
             previewX = (cellWidth * getGridX) + (gap / 2)
           }
 
           if(dirextionY < 1) {
-            hoveBox.y = ((cellHeight * getGridY) + (gap / 2))
+            hoverBox.y = ((cellHeight * getGridY) + (gap / 2))
             previewY = (cellHeight * getGridY) + (gap / 2)
           }
 
-          hoveBox.width = ((cellWidth * cellCountX) - gap)
-          hoveBox.height = ((cellHeight * cellCountY) - gap)
+          hoverBox.width = ((cellWidth * cellCountX) - gap)
+          hoverBox.height = ((cellHeight * cellCountY) - gap)
 
           previewWidth = ((cellWidth * cellCountX) - gap)
           previewHeight = ((cellHeight * cellCountY) - gap)
@@ -100,6 +100,9 @@ Rectangle {
       preview.boxX = (100 * previewX) / parent.width
       preview.boxY = (100 * previewY) / parent.height
 
+      // shapePreview.width = (100 * previewWidth) / parent.width
+      // shapePreview.height = (100 * previewHeight) / parent.height
+
       var db = LocalStorage.openDatabaseSync("QDeclarativeExampleDB", "1.0", "The Example QML SQL!", 1000000);
 
       db.transaction(
@@ -111,10 +114,17 @@ Rectangle {
   }
 
   Rectangle {
-    id: hoveBox
+    id: hoverBox
     width: 0
     height: 0
     color: "red"
+  }
+
+  Rectangle {
+    id: shapePreview
+    width: 0
+    height: 0
+    color: "blue"
   }
 
   Canvas {

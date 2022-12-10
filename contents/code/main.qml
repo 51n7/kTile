@@ -14,8 +14,6 @@ PlasmaCore.Dialog {
   flags: Qt.X11BypassWindowManagerHint | Qt.FramelessWindowHint
   visible: false
 
-  // property int columns: 6
-  // property int rows: 4
   property bool editMode: false
   property bool restartButtonVisible: true
 
@@ -34,57 +32,30 @@ PlasmaCore.Dialog {
 
   ColumnLayout {
     id: mainColumnLayout
-    anchors.horizontalCenter: parent.horizontalCenter
 
     RowLayout {
       id: headerRowLayout
-      // visible: mainDialog.headerVisible
 
       PlasmaComponents.Label {
         text: "kTile"
         Layout.fillWidth: true
       }
-
-      /*Switch {
-        id: editToggle
-        onToggled: editMode = !editMode
-        indicator: Rectangle {
-          implicitWidth: 48
-          implicitHeight: 26
-          x: editToggle.width - width - editToggle.rightPadding
-          y: parent.height / 2 - height / 2
-          radius: 13
-          color: editToggle.checked ? "green" : "red"
-          // border.color: "black"
-
-          Rectangle {
-            x: editToggle.checked ? parent.width - width : 0
-            width: 26
-            height: 26
-            radius: 13
-            // border.color: "black"
-          }
-        }
-      }*/
       
       PlasmaComponents.Button {
         icon.name: "list-add-symbolic"
         visible: restartButtonVisible
         onClicked: {
-          print('add');
 
           var db = LocalStorage.openDatabaseSync("QDeclarativeExampleDB", "1.0", "The Example QML SQL!", 1000000);
 
           db.transaction(
             function(tx) {
 
-              tx.executeSql('CREATE TABLE IF NOT EXISTS spaces(width INTEGER, height INTEGER, x INTEGER, y INTEGER)');
               // tx.executeSql('DROP TABLE spaces');
-              
-              // var rs = tx.executeSql('SELECT rowid FROM spaces ORDER BY ROWID DESC LIMIT 1');
-              var insert = tx.executeSql('INSERT INTO spaces VALUES(?, ?, ?, ?) RETURNING rowid', [ 50, 50, 0, 0 ]);
 
-              print(insert.rows[0].rowid)
+              tx.executeSql('CREATE TABLE IF NOT EXISTS spaces(width INTEGER, height INTEGER, x INTEGER, y INTEGER)');
+              
+              var insert = tx.executeSql('INSERT INTO spaces VALUES(?, ?, ?, ?) RETURNING rowid', [ 50, 50, 0, 0 ]);
 
               var component = Qt.createComponent("block.qml")
               var object = component.createObject(flowLayout, {
@@ -98,22 +69,6 @@ PlasmaCore.Dialog {
           )
         }
       }
-
-      /*PlasmaComponents.Button {
-        icon.name: "edit-entry"
-        visible: restartButtonVisible
-        onClicked: {
-          print('edit');
-        }
-      }
-      
-      PlasmaComponents.Button {
-        icon.name: "edit-delete-symbolic"
-        visible: restartButtonVisible
-        onClicked: {
-          print('delete');
-        }
-      }*/
       
       PlasmaComponents.Button {
         icon.name: "dialog-close"
@@ -125,55 +80,50 @@ PlasmaCore.Dialog {
 
     Rectangle {
       id: tableBackground
-      color: "transparent"
-      // border.width: 2
-      // border.color: "#EDEDEE"
-      // radius: 4
-      width: 895
+      width: 850
       height: 400
+      color: "transparent"
 
       ScrollView {
-        id: tableArea
+        id: scrollview1
         anchors.fill: parent
+        anchors.margins: 10
         clip: true
-
-        anchors {
-          fill: parent
-          leftMargin: 30
-          rightMargin: 0
-          topMargin: 10
-          bottomMargin: 10
-        }
+        ScrollBar.vertical.policy: ScrollBar.AlwaysOff
         
-        Flow {
-          property int rowCount: parent.width / (200 + spacing)
-          property int rowWidth: rowCount * 200 + (rowCount - 1) * spacing
-          property int mar: (parent.width - rowWidth) / 2
+        ColumnLayout {
+          width: parent.width
 
-          id: flowLayout
-          width: 900
-          spacing: 10
+          Flow {
+            property int rowCount: parent.width / (200 + spacing)
+            property int rowWidth: rowCount * 200 + (rowCount - 1) * spacing
+            property int mar: (parent.width - rowWidth) / 2
 
-          Component.onCompleted: {
-            
-            var component = Qt.createComponent("block.qml")
+            id: flowLayout
+            width: parent.parent.width
+            spacing: 10
 
-            var db = LocalStorage.openDatabaseSync("QDeclarativeExampleDB", "1.0", "The Example QML SQL!", 1000000);
+            Component.onCompleted: {
+              
+              var component = Qt.createComponent("block.qml")
 
-            db.transaction(
-              function(tx) {
-                var rs = tx.executeSql('SELECT rowid, * FROM spaces');
-                for (var i = 0; i < rs.rows.length; i++) {
-                  var object = component.createObject(flowLayout, {
-                    id: rs.rows.item(i).rowid,
-                    boxWidth: rs.rows.item(i).width,
-                    boxHeight: rs.rows.item(i).height,
-                    boxX: rs.rows.item(i).x,
-                    boxY: rs.rows.item(i).y
-                  });
+              var db = LocalStorage.openDatabaseSync("QDeclarativeExampleDB", "1.0", "The Example QML SQL!", 1000000);
+
+              db.transaction(
+                function(tx) {
+                  var rs = tx.executeSql('SELECT rowid, * FROM spaces');
+                  for (var i = 0; i < rs.rows.length; i++) {
+                    var object = component.createObject(flowLayout, {
+                      id: rs.rows.item(i).rowid,
+                      boxWidth: rs.rows.item(i).width,
+                      boxHeight: rs.rows.item(i).height,
+                      boxX: rs.rows.item(i).x,
+                      boxY: rs.rows.item(i).y
+                    });
+                  }
                 }
-              }
-            )
+              )
+            }
           }
         }
       }
@@ -195,6 +145,15 @@ PlasmaCore.Dialog {
         }
       }
     );
+
+    // KWin.registerShortcut(
+    //   "kTile Close",
+    //   "kTile Close",
+    //   "Escape",
+    //   function() {
+    //     mainDialog.visible = false;
+    //   }
+    // );
 
     mainDialog.loadConfig();
   }
