@@ -31,10 +31,9 @@ PlasmaComponents.Button {
 
   MouseArea {
     property double pad: ((2 / 100) * parent.width) // 2% of parent.width
-    property bool hovered: false
-    onEntered: hovered = true
-    onExited: hovered = false
-
+    property bool isHovered: false
+    onEntered: isHovered = true
+    onExited: isHovered = false
     anchors.margins: pad
     anchors.fill: parent
     hoverEnabled: true
@@ -49,23 +48,36 @@ PlasmaComponents.Button {
       height: ((boxHeight / 100) * parent.height)
       x: ((boxX / 100) * parent.width)
       y: ((boxY / 100) * parent.height)
-      // enabled: false
-      // opacity: 1
-      // background: Rectangle {
-      //   color: "red"
-      // }
+      visible: !parent.isHovered
+    }
+
+    // fake the button hover state
+    PlasmaComponents.Button {
+      width: ((boxWidth / 100) * parent.width)
+      height: ((boxHeight / 100) * parent.height)
+      x: ((boxX / 100) * parent.width)
+      y: ((boxY / 100) * parent.height)
+      visible: parent.isHovered
+      signal hovered()
+
+      MouseArea {
+        anchors.fill: parent
+
+        onClicked: {
+          tileWindow(workspace.activeClient);
+          mainDialog.visible = false
+        }
+      }
     }
 
     RowLayout {
       anchors.top: parent.top
       anchors.right: parent.right
-      visible: parent.hovered
+      visible: parent.isHovered
 
       PlasmaComponents.Button {
         icon.name: "edit-entry"
         onClicked: {
-          print('edit');
-
           var component = Qt.createComponent("edit.qml")
           component.createObject(tableBackground, {id: id});
         }
@@ -74,7 +86,6 @@ PlasmaComponents.Button {
       PlasmaComponents.Button {
         icon.name: "edit-delete-symbolic"
         onClicked: {
-          print('delete');
 
           this.parent.parent.parent.destroy()
 

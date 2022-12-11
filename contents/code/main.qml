@@ -30,6 +30,26 @@ PlasmaCore.Dialog {
     mainDialog.y = screen.y + screen.height/2 - mainDialog.height/2;
   }
 
+  function tileWindow(window, pos) {
+    if (!window.normalWindow) return;
+    let screen = workspace.clientArea(KWin.MaximizeArea, workspace.activeScreen, window.desktop);
+    let db = LocalStorage.openDatabaseSync("QDeclarativeExampleDB", "1.0", "The Example QML SQL!", 1000000);
+
+    db.transaction(
+      function(tx) {
+        const rs = tx.executeSql('SELECT rowid, * FROM spaces WHERE rowid = ' + pos);
+
+        let newWidth = ((rs.rows[0].width / 100) * screen.width)
+        let newHeight = ((rs.rows[0].height / 100) * screen.height)
+        let newX = ((rs.rows[0].x / 100) * screen.width)
+        let newY = ((rs.rows[0].y / 100) * screen.height)
+
+        window.setMaximize(false, false);
+        window.geometry = Qt.rect(newX, newY, newWidth, newHeight);
+      }
+    )
+  }
+
   ColumnLayout {
     id: mainColumnLayout
 
@@ -131,7 +151,9 @@ PlasmaCore.Dialog {
   }
 
   Component.onCompleted: {
+
     KWin.registerWindow(mainDialog);
+
     KWin.registerShortcut(
       "kTile",
       "kTile",
@@ -143,6 +165,33 @@ PlasmaCore.Dialog {
           mainDialog.loadConfig();
           mainDialog.show();
         }
+      }
+    );
+
+    KWin.registerShortcut(
+      "kTile Position 1",
+      "kTile Position 1",
+      "",
+      function() {
+        tileWindow(workspace.activeClient, 1);
+      }
+    );
+
+    KWin.registerShortcut(
+      "kTile Position 2",
+      "kTile Position 2",
+      "",
+      function() {
+        tileWindow(workspace.activeClient, 2);
+      }
+    );
+
+    KWin.registerShortcut(
+      "kTile Position 3",
+      "kTile Position 3",
+      "",
+      function() {
+        tileWindow(workspace.activeClient, 3);
       }
     );
 
