@@ -11,6 +11,7 @@ PlasmaComponents.Button {
   property double boxHeight
   property double boxX
   property double boxY
+  property double boxGap: 10
   
   width: 200
   height: 120
@@ -20,10 +21,10 @@ PlasmaComponents.Button {
 
     let screen = workspace.clientArea(KWin.MaximizeArea, workspace.activeScreen, window.desktop);
     
-    let newWidth = ((boxWidth / 100) * screen.width)
-    let newHeight = ((boxHeight / 100) * screen.height)
-    let newX = ((boxX / 100) * screen.width)
-    let newY = ((boxY / 100) * screen.height)
+    let newWidth = ((boxWidth / 100) * (screen.width - boxGap)) - boxGap
+    let newHeight = ((boxHeight / 100) * (screen.height - boxGap)) - boxGap
+    let newX = ((boxX / 100) * (screen.width - boxGap)) + boxGap
+    let newY = ((boxY / 100) * (screen.height - boxGap)) + boxGap
 
     window.setMaximize(false, false);
     window.geometry = Qt.rect(newX, newY, newWidth, newHeight);
@@ -99,5 +100,13 @@ PlasmaComponents.Button {
         }
       }
     }
+  }
+
+  Text {
+    text: id
+    font.pointSize: 38
+    anchors.centerIn: parent
+    opacity: 0.2
+    visible: showNumbers
   }
 }

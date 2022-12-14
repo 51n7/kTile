@@ -16,6 +16,7 @@ PlasmaCore.Dialog {
 
   property bool editMode: false
   property bool restartButtonVisible: true
+  property bool showNumbers: false
 
   function loadConfig(){
     // columns = KWin.readConfig("columns", 6);
@@ -39,10 +40,12 @@ PlasmaCore.Dialog {
       function(tx) {
         const rs = tx.executeSql('SELECT rowid, * FROM spaces WHERE rowid = ' + pos);
 
-        let newWidth = ((rs.rows[0].width / 100) * screen.width)
-        let newHeight = ((rs.rows[0].height / 100) * screen.height)
-        let newX = ((rs.rows[0].x / 100) * screen.width)
-        let newY = ((rs.rows[0].y / 100) * screen.height)
+        const tmpGap = 10
+
+        let newWidth = ((rs.rows[0].width / 100) * (screen.width - tmpGap)) - tmpGap
+        let newHeight = ((rs.rows[0].height / 100) * (screen.height - tmpGap)) - tmpGap
+        let newX = ((rs.rows[0].x / 100) * (screen.width - tmpGap)) + tmpGap
+        let newY = ((rs.rows[0].y / 100) * (screen.height - tmpGap)) + tmpGap
 
         window.setMaximize(false, false);
         window.geometry = Qt.rect(newX, newY, newWidth, newHeight);
@@ -59,6 +62,13 @@ PlasmaCore.Dialog {
       PlasmaComponents.Label {
         text: "kTile"
         Layout.fillWidth: true
+      }
+
+      PlasmaComponents.Button {
+        icon.name: showNumbers ? "password-show-on" : "password-show-off"
+        onClicked: {
+          showNumbers = !showNumbers
+        }
       }
       
       PlasmaComponents.Button {
@@ -168,32 +178,17 @@ PlasmaCore.Dialog {
       }
     );
 
-    KWin.registerShortcut(
-      "kTile Position 1",
-      "kTile Position 1",
-      "",
-      function() {
-        tileWindow(workspace.activeClient, 1);
-      }
-    );
-
-    KWin.registerShortcut(
-      "kTile Position 2",
-      "kTile Position 2",
-      "",
-      function() {
-        tileWindow(workspace.activeClient, 2);
-      }
-    );
-
-    KWin.registerShortcut(
-      "kTile Position 3",
-      "kTile Position 3",
-      "",
-      function() {
-        tileWindow(workspace.activeClient, 3);
-      }
-    );
+    for (var i = 1; i <= 12; i++) {
+      let count = i
+      KWin.registerShortcut(
+        "kTile Position " + count,
+        "kTile Position " + count,
+        "",
+        function() {
+          tileWindow(workspace.activeClient, count);
+        }
+      );
+    }
 
     // KWin.registerShortcut(
     //   "kTile Close",

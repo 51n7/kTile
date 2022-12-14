@@ -8,8 +8,8 @@ Rectangle {
   property int id
   property var dragging: false
   property int cols: 6
-  property int rows: 4
-  property double gap: 0
+  property int rows: 6
+  property double editGap: 0
   property double cellWidth: parent.width / cols
   property double cellHeight: parent.height / rows
   property double storeX: 0
@@ -48,11 +48,11 @@ Rectangle {
         if(!dragging) {
 
           // mouse hover
-          hoverBox.x = cellWidth * getGridX
-          hoverBox.y = cellHeight * getGridY
-          hoverBox.width = cellWidth
-          hoverBox.height = cellHeight
-
+          hoverBox.width = (cellWidth - editGap)
+          hoverBox.height = (cellHeight - editGap)
+          hoverBox.x = ((cellWidth * getGridX) + (editGap / 2))
+          hoverBox.y = ((cellHeight * getGridY) + (editGap / 2))
+          
         } else {
 
           // mouse drag
@@ -63,20 +63,20 @@ Rectangle {
           var cellCountY = (dirextionY < 0 ? dirextionY * -1 : dirextionY) + 1
 
           if(dirextionX < 1) {
-            hoverBox.x = ((cellWidth * getGridX) + (gap / 2))
-            previewX = (cellWidth * getGridX) + (gap / 2)
+            hoverBox.x = ((cellWidth * getGridX) + (editGap / 2))
+            previewX = (cellWidth * getGridX) + (editGap / 2)
           }
 
           if(dirextionY < 1) {
-            hoverBox.y = ((cellHeight * getGridY) + (gap / 2))
-            previewY = (cellHeight * getGridY) + (gap / 2)
+            hoverBox.y = ((cellHeight * getGridY) + (editGap / 2))
+            previewY = (cellHeight * getGridY) + (editGap / 2)
           }
 
-          hoverBox.width = ((cellWidth * cellCountX) - gap)
-          hoverBox.height = ((cellHeight * cellCountY) - gap)
+          hoverBox.width = ((cellWidth * cellCountX) - editGap)
+          hoverBox.height = ((cellHeight * cellCountY) - editGap)
 
-          previewWidth = ((cellWidth * cellCountX) - gap)
-          previewHeight = ((cellHeight * cellCountY) - gap)
+          previewWidth = ((cellWidth * cellCountX) - editGap)
+          previewHeight = ((cellHeight * cellCountY) - editGap)
 
         }
       }
