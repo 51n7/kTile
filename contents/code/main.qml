@@ -17,6 +17,7 @@ PlasmaCore.Dialog {
   property bool editMode: false
   property bool restartButtonVisible: true
   property bool showNumbers: false
+  property double gap: 10
 
   function loadConfig(){
     // columns = KWin.readConfig("columns", 6);
@@ -32,6 +33,7 @@ PlasmaCore.Dialog {
   }
 
   function tileWindow(window, pos) {
+
     if (!window.normalWindow) return;
     let screen = workspace.clientArea(KWin.MaximizeArea, workspace.activeScreen, window.desktop);
     let db = LocalStorage.openDatabaseSync("QDeclarativeExampleDB", "1.0", "The Example QML SQL!", 1000000);
@@ -40,12 +42,10 @@ PlasmaCore.Dialog {
       function(tx) {
         const rs = tx.executeSql('SELECT rowid, * FROM spaces WHERE rowid = ' + pos);
 
-        const tmpGap = 10
-
-        let newWidth = ((rs.rows[0].width / 100) * (screen.width - tmpGap)) - tmpGap
-        let newHeight = ((rs.rows[0].height / 100) * (screen.height - tmpGap)) - tmpGap
-        let newX = ((rs.rows[0].x / 100) * (screen.width - tmpGap)) + tmpGap
-        let newY = ((rs.rows[0].y / 100) * (screen.height - tmpGap)) + tmpGap
+        let newWidth = ((rs.rows[0].width / 100) * (screen.width - gap)) - gap
+        let newHeight = ((rs.rows[0].height / 100) * (screen.height - gap)) - gap
+        let newX = ((rs.rows[0].x / 100) * (screen.width - gap)) + gap
+        let newY = ((rs.rows[0].y / 100) * (screen.height - gap)) + gap
 
         window.setMaximize(false, false);
         window.geometry = Qt.rect(newX, newY, newWidth, newHeight);

@@ -11,24 +11,9 @@ PlasmaComponents.Button {
   property double boxHeight
   property double boxX
   property double boxY
-  property double boxGap: 10
   
   width: 200
   height: 120
-
-  function tileWindow(window) {
-    if (!window.normalWindow) return;
-
-    let screen = workspace.clientArea(KWin.MaximizeArea, workspace.activeScreen, window.desktop);
-    
-    let newWidth = ((boxWidth / 100) * (screen.width - boxGap)) - boxGap
-    let newHeight = ((boxHeight / 100) * (screen.height - boxGap)) - boxGap
-    let newX = ((boxX / 100) * (screen.width - boxGap)) + boxGap
-    let newY = ((boxY / 100) * (screen.height - boxGap)) + boxGap
-
-    window.setMaximize(false, false);
-    window.geometry = Qt.rect(newX, newY, newWidth, newHeight);
-  }
 
   MouseArea {
     property double pad: ((2 / 100) * parent.width) // 2% of parent.width
@@ -40,7 +25,7 @@ PlasmaComponents.Button {
     hoverEnabled: true
 
     onClicked: {
-      tileWindow(workspace.activeClient);
+      tileWindow(workspace.activeClient, id);
       mainDialog.visible = false
     }
 
@@ -65,7 +50,7 @@ PlasmaComponents.Button {
         anchors.fill: parent
 
         onClicked: {
-          tileWindow(workspace.activeClient);
+          tileWindow(workspace.activeClient, id);
           mainDialog.visible = false
         }
       }
