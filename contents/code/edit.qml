@@ -9,7 +9,7 @@ import org.kde.plasma.components 3.0 as PlasmaComponents
 Rectangle {
   property int id
   property var dragging: false
-  property int cols: 6
+  property int cols: 8
   property int rows: 6
   property double editGap: 0
   property double storeX: 0
@@ -35,15 +35,60 @@ Rectangle {
     anchors.fill: parent
 
     RowLayout {
+
+      SpinBox {
+        value: cols
+        onValueChanged: {
+          cols = value
+          lines.requestPaint()
+        }
+      }
+
       PlasmaComponents.Label {
-        text: "kTile"
+        text: "x"
+      }
+
+      SpinBox {
+        value: rows
+        onValueChanged: {
+          rows = value
+          lines.requestPaint()
+        }
+      }
+
+      PlasmaComponents.Button {
         Layout.fillWidth: true
+        enabled: false
+        opacity: 0
       }
       
       PlasmaComponents.Button {
         icon.name: "checkbox"
         onClicked: {
-          print('add')
+          if(
+            previewWidth !== 0 ||
+            previewHeight !== 0 ||
+            previewX !== 0 ||
+            previewY !== 0
+            ) {
+            var preview = flowLayout.children[(id - 1)]
+
+            preview.boxWidth = (100 * previewWidth) / grid.width
+            preview.boxHeight = (100 * previewHeight) / grid.height
+            preview.boxX = (100 * previewX) / grid.width
+            preview.boxY = (100 * previewY) / grid.height
+
+            var db = LocalStorage.openDatabaseSync("QDeclarativeExampleDB", "1.0", "The Example QML SQL!", 1000000);
+
+            db.transaction(
+              function(tx) {
+                tx.executeSql('UPDATE spaces SET width = '+ preview.boxWidth +', height = '+ preview.boxHeight +', x = '+ preview.boxX +', y = '+ preview.boxY +' WHERE rowid = ' + id);
+              }
+            )
+          }
+
+          this.parent.parent.parent.destroy()
+          mainColumnLayout.visible = true;
         }
       }
       
@@ -71,6 +116,7 @@ Rectangle {
       color: backgroundColor
       
       MouseArea {
+        id: grid
         anchors.fill: parent
         hoverEnabled: true
         preventStealing: true
@@ -136,26 +182,11 @@ Rectangle {
         }
         onReleased: {
           dragging = false
-
-          var preview = flowLayout.children[(id - 1)]
-
-          preview.boxWidth = (100 * previewWidth) / parent.width
-          preview.boxHeight = (100 * previewHeight) / parent.height
-          preview.boxX = (100 * previewX) / parent.width
-          preview.boxY = (100 * previewY) / parent.height
-
+          
           shapePreview.width = hoverBox.width
           shapePreview.height = hoverBox.height
           shapePreview.x = hoverBox.x
           shapePreview.y = hoverBox.y
-
-          var db = LocalStorage.openDatabaseSync("QDeclarativeExampleDB", "1.0", "The Example QML SQL!", 1000000);
-
-          db.transaction(
-            function(tx) {
-              tx.executeSql('UPDATE spaces SET width = '+ preview.boxWidth +', height = '+ preview.boxHeight +', x = '+ preview.boxX +', y = '+ preview.boxY +' WHERE rowid = ' + id);
-            }
-          )
         }
       }
 
@@ -178,11 +209,13 @@ Rectangle {
       Canvas {
         property double cellWidth: parent.width / cols
         property double cellHeight: parent.height / rows
+        id: lines
         anchors.fill : parent
         visible: true
         onPaint: {
 
           var ctx = getContext("2d")
+          ctx.reset()
           ctx.lineWidth = 1
           ctx.strokeStyle = "black"
           ctx.beginPath()
