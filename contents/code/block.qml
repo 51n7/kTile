@@ -65,7 +65,13 @@ PlasmaComponents.Button {
         icon.name: "edit-entry"
         onClicked: {
           var component = Qt.createComponent("edit.qml")
-          component.createObject(mainDialog, {id: id});
+          component.createObject(mainDialog, {
+            id: id,
+            setWidth: boxWidth,
+            setHeight: boxHeight,
+            setX: boxX,
+            setY: boxY
+          });
           mainColumnLayout.visible = false;
         }
       }

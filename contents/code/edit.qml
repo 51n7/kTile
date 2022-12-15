@@ -18,6 +18,13 @@ Rectangle {
   property double previewHeight: 0
   property double previewX: 0
   property double previewY: 0
+  property double setWidth: 0
+  property double setHeight: 0
+  property double setX: 0
+  property double setY: 0
+  property string backgroundColor: "#5f5f5f"
+  property string selectionColor: "#ffffff"
+  property string hoverColor: "#4996ff"
 
   id: edit
   color: "transparent"
@@ -61,6 +68,7 @@ Rectangle {
     Rectangle {
       Layout.fillWidth: true
       Layout.fillHeight: true
+      color: backgroundColor
       
       MouseArea {
         anchors.fill: parent
@@ -120,9 +128,6 @@ Rectangle {
             }
           }
         }
-        onClicked: {
-          print('onClicked')
-        }
         onPressed: {
           dragging = true
 
@@ -139,8 +144,10 @@ Rectangle {
           preview.boxX = (100 * previewX) / parent.width
           preview.boxY = (100 * previewY) / parent.height
 
-          // shapePreview.width = (100 * previewWidth) / parent.width
-          // shapePreview.height = (100 * previewHeight) / parent.height
+          shapePreview.width = hoverBox.width
+          shapePreview.height = hoverBox.height
+          shapePreview.x = hoverBox.x
+          shapePreview.y = hoverBox.y
 
           var db = LocalStorage.openDatabaseSync("QDeclarativeExampleDB", "1.0", "The Example QML SQL!", 1000000);
 
@@ -153,17 +160,19 @@ Rectangle {
       }
 
       Rectangle {
-        id: hoverBox
-        width: 0
-        height: 0
-        color: "red"
+        id: shapePreview
+        width: ((setWidth / 100) * parent.width)
+        height: ((setHeight / 100) * parent.height)
+        x: ((setX / 100) * parent.width)
+        y: ((setY / 100) * parent.height)
+        color: selectionColor
       }
 
       Rectangle {
-        id: shapePreview
+        id: hoverBox
         width: 0
         height: 0
-        color: "blue"
+        color: hoverColor
       }
 
       Canvas {
