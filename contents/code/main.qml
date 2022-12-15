@@ -63,13 +63,6 @@ PlasmaCore.Dialog {
         text: "kTile"
         Layout.fillWidth: true
       }
-
-      PlasmaComponents.Button {
-        icon.name: showNumbers ? "password-show-on" : "password-show-off"
-        onClicked: {
-          showNumbers = !showNumbers
-        }
-      }
       
       PlasmaComponents.Button {
         icon.name: "list-add-symbolic"
@@ -99,6 +92,13 @@ PlasmaCore.Dialog {
           )
         }
       }
+
+      PlasmaComponents.Button {
+        icon.name: showNumbers ? "password-show-on" : "password-show-off"
+        onClicked: {
+          showNumbers = !showNumbers
+        }
+      }
       
       PlasmaComponents.Button {
         icon.name: "dialog-close"
@@ -109,7 +109,7 @@ PlasmaCore.Dialog {
     }
 
     Rectangle {
-      id: tableBackground
+      id: spacesContainer
       width: 850
       height: 400
       color: "transparent"
