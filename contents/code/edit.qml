@@ -65,6 +65,8 @@ Rectangle {
       PlasmaComponents.Button {
         icon.name: "checkbox"
         onClicked: {
+          var db = LocalStorage.openDatabaseSync("QDeclarativeExampleDB", "1.0", "The Example QML SQL!", 1000000);
+
           if(
             previewWidth !== 0 ||
             previewHeight !== 0 ||
@@ -77,15 +79,19 @@ Rectangle {
             preview.boxHeight = (100 * previewHeight) / grid.height
             preview.boxX = (100 * previewX) / grid.width
             preview.boxY = (100 * previewY) / grid.height
-
-            var db = LocalStorage.openDatabaseSync("QDeclarativeExampleDB", "1.0", "The Example QML SQL!", 1000000);
-
+            
             db.transaction(
               function(tx) {
                 tx.executeSql('UPDATE spaces SET width = '+ preview.boxWidth +', height = '+ preview.boxHeight +', x = '+ preview.boxX +', y = '+ preview.boxY +' WHERE rowid = ' + id);
               }
             )
           }
+
+          db.transaction(
+            function(tx) {
+              tx.executeSql('UPDATE grid SET x = '+ cols +', y = '+ rows +' WHERE rowid = 1');
+            }
+          )
 
           this.parent.parent.parent.destroy()
           mainColumnLayout.visible = true;
@@ -237,5 +243,18 @@ Rectangle {
         }
       }
     }
+  }
+
+  Component.onCompleted: {
+
+    var db = LocalStorage.openDatabaseSync("QDeclarativeExampleDB", "1.0", "The Example QML SQL!", 1000000);
+
+    db.transaction(
+      function(tx) {
+        let rs = tx.executeSql('SELECT rowid, * FROM grid');
+        cols = rs.rows[0].x
+        rows = rs.rows[0].y
+      }
+    )
   }
 }

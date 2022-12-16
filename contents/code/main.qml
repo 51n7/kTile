@@ -172,7 +172,7 @@ PlasmaCore.Dialog {
         if (mainDialog.visible) {
           mainDialog.visible = false;
         } else {
-          mainDialog.loadConfig();
+          // mainDialog.loadConfig();
           mainDialog.show();
         }
       }
@@ -199,6 +199,23 @@ PlasmaCore.Dialog {
     //   }
     // );
 
-    mainDialog.loadConfig();
+    // mainDialog.loadConfig();
+
+    var db = LocalStorage.openDatabaseSync("QDeclarativeExampleDB", "1.0", "The Example QML SQL!", 1000000);
+
+    db.transaction(
+      function(tx) {
+
+        // tx.executeSql('DROP TABLE grid');
+
+        tx.executeSql('CREATE TABLE IF NOT EXISTS grid(x INTEGER, y INTEGER)');
+
+        var rs = tx.executeSql('SELECT rowid, * FROM grid');
+
+        if(rs.rows.length == 0) {
+          tx.executeSql('INSERT INTO grid VALUES(?, ?)', [ 8, 6 ]);
+        }
+      }
+    )
   }
 }
