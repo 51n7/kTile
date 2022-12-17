@@ -21,7 +21,7 @@ This is a Kwin script that allows you to create a desktop region by grid selecti
 
 By default the script uses `Ctrl + .` to bring up the main window, to change this see the configuration section below.
 In the main window you can click the ➕ button in the top right to add a new region then hover over the new region to see the edit and delete options.
-In edit mode you can then drag select to draw the size/position you want and also set the grid you need.
+In edit mode you can then drag select to draw the size/position you want and also set the grid and gap you need.
 Once you're done hit the ✔️ button to save.
 
 ## Configuration
@@ -42,6 +42,7 @@ As this is my first time writing a Kwin script and using QML I realize there is 
 ### TODO:
 - [x] ~~save custom grid size~~
 - [x] ~~bug with sqlite not reindexing table~~
+- [x] ~~allow gap resize~~
 - [ ] close with escape
 - [ ] close by clicking outside window
 - [ ] quick full screen drag selection
