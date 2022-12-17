@@ -39,6 +39,13 @@ Most of the configuration is done through the graphical interface however due to
 
 As this is my first time writing a Kwin script and using QML I realize there is a lot for me to refactor here. Any feedback would be much appreciated by creating a new [issue](https://github.com/jonbestdev/kTile/issues).
 
+### TODO:
+- [x] ~~save custom grid size~~
+- [x] ~~bug with sqlite not reindexing table~~
+- [ ] close with escape
+- [ ] close by clicking outside window
+- [ ] quick full screen drag selection
+
 ## Special Thanks
 
 This would not be possible with out inspiration from [Moom](https://manytricks.com/moom/) and [Exquisite](https://github.com/qewer33/Exquisite), so many many thanks to both of these great apps.
