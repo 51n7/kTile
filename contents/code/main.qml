@@ -214,12 +214,13 @@ PlasmaCore.Dialog {
     db.transaction(
       function(tx) {
 
-        tx.executeSql('CREATE TABLE IF NOT EXISTS grid(x INTEGER, y INTEGER)');
+        // tx.executeSql('DROP TABLE grid');
+        tx.executeSql('CREATE TABLE IF NOT EXISTS grid(x INTEGER, y INTEGER, gap INTEGER)');
 
         var rs = tx.executeSql('SELECT rowid, * FROM grid');
 
         if(rs.rows.length == 0) {
-          tx.executeSql('INSERT INTO grid VALUES(?, ?)', [ 8, 6 ]);
+          tx.executeSql('INSERT INTO grid VALUES(?, ?, ?)', [ 8, 6, 0 ]);
         }
       }
     )

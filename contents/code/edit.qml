@@ -11,7 +11,6 @@ Rectangle {
   property var dragging: false
   property int cols: 8
   property int rows: 6
-  property double editGap: 0
   property double storeX: 0
   property double storeY: 0
   property double previewWidth: 0
@@ -56,6 +55,18 @@ Rectangle {
         }
       }
 
+      PlasmaComponents.Label {
+        text: "|"
+      }
+
+      SpinBox {
+        value: gap
+        to: 24
+        onValueChanged: {
+          gap = value
+        }
+      }
+
       PlasmaComponents.Button {
         Layout.fillWidth: true
         enabled: false
@@ -89,7 +100,7 @@ Rectangle {
 
           db.transaction(
             function(tx) {
-              tx.executeSql('UPDATE grid SET x = '+ cols +', y = '+ rows +' WHERE rowid = 1');
+              tx.executeSql('UPDATE grid SET x = '+ cols +', y = '+ rows +', gap = '+ gap +' WHERE rowid = 1');
             }
           )
 
@@ -147,10 +158,10 @@ Rectangle {
             if(!dragging) {
 
               // mouse hover
-              hoverBox.width = (cellWidth - editGap)
-              hoverBox.height = (cellHeight - editGap)
-              hoverBox.x = ((cellWidth * getGridX) + (editGap / 2))
-              hoverBox.y = ((cellHeight * getGridY) + (editGap / 2))
+              hoverBox.width = (cellWidth - gap)
+              hoverBox.height = (cellHeight - gap)
+              hoverBox.x = ((cellWidth * getGridX) + (gap / 2))
+              hoverBox.y = ((cellHeight * getGridY) + (gap / 2))
               
             } else {
 
@@ -162,20 +173,20 @@ Rectangle {
               var cellCountY = (dirextionY < 0 ? dirextionY * -1 : dirextionY) + 1
 
               if(dirextionX < 1) {
-                hoverBox.x = ((cellWidth * getGridX) + (editGap / 2))
-                previewX = (cellWidth * getGridX) + (editGap / 2)
+                hoverBox.x = ((cellWidth * getGridX) + (gap / 2))
+                previewX = (cellWidth * getGridX)
               }
 
               if(dirextionY < 1) {
-                hoverBox.y = ((cellHeight * getGridY) + (editGap / 2))
-                previewY = (cellHeight * getGridY) + (editGap / 2)
+                hoverBox.y = ((cellHeight * getGridY) + (gap / 2))
+                previewY = (cellHeight * getGridY)
               }
 
-              hoverBox.width = ((cellWidth * cellCountX) - editGap)
-              hoverBox.height = ((cellHeight * cellCountY) - editGap)
+              hoverBox.width = ((cellWidth * cellCountX) - gap)
+              hoverBox.height = ((cellHeight * cellCountY) - gap)
 
-              previewWidth = ((cellWidth * cellCountX) - editGap)
-              previewHeight = ((cellHeight * cellCountY) - editGap)
+              previewWidth = (cellWidth * cellCountX)
+              previewHeight = (cellHeight * cellCountY)
 
             }
           }
@@ -198,10 +209,10 @@ Rectangle {
 
       Rectangle {
         id: shapePreview
-        width: ((setWidth / 100) * parent.width)
-        height: ((setHeight / 100) * parent.height)
-        x: ((setX / 100) * parent.width)
-        y: ((setY / 100) * parent.height)
+        width: ((setWidth / 100) * parent.width) - gap
+        height: ((setHeight / 100) * parent.height) - gap
+        x: ((setX / 100) * parent.width) + (gap / 2)
+        y: ((setY / 100) * parent.height) + (gap / 2)
         color: selectionColor
       }
 
@@ -254,6 +265,7 @@ Rectangle {
         let rs = tx.executeSql('SELECT rowid, * FROM grid');
         cols = rs.rows[0].x
         rows = rs.rows[0].y
+        gap = rs.rows[0].gap
       }
     )
   }
