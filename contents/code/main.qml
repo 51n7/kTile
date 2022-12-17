@@ -18,11 +18,6 @@ PlasmaCore.Dialog {
   property bool showNumbers: false
   property double gap: 10
 
-  function loadConfig(){
-    // columns = KWin.readConfig("columns", 6);
-    // rows = KWin.readConfig("rows", 4);
-  }
-
   function show() {
     var screen = workspace.clientArea(KWin.FullScreenArea, workspace.activeScreen, workspace.currentDesktop);
     mainDialog.visible = true;
@@ -180,7 +175,6 @@ PlasmaCore.Dialog {
         if (mainDialog.visible) {
           mainDialog.visible = false;
         } else {
-          // mainDialog.loadConfig();
           mainDialog.show();
         }
       }
@@ -207,14 +201,11 @@ PlasmaCore.Dialog {
     //   }
     // );
 
-    // mainDialog.loadConfig();
-
     var db = LocalStorage.openDatabaseSync("QDeclarativeExampleDB", "1.0", "The Example QML SQL!", 1000000);
 
     db.transaction(
       function(tx) {
 
-        // tx.executeSql('DROP TABLE grid');
         tx.executeSql('CREATE TABLE IF NOT EXISTS grid(x INTEGER, y INTEGER, gap INTEGER)');
 
         var rs = tx.executeSql('SELECT rowid, * FROM grid');

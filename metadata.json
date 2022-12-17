@@ -16,9 +16,8 @@
     ],
     "Version": "1.0",
     "Licsense": "GPLv3",
-    "Website": "https://github.com/username/myscript"
+    "Website": "https://github.com/jonbestdev/ktile"
   },
   "X-Plasma-API": "declarativescript",
-  "X-Plasma-MainScript": "code/main.qml",
-  "X-KDE-ConfigModule": "kwin/effects/configs/kcm_kwin4_genericscripted"
+  "X-Plasma-MainScript": "code/main.qml"
 }
