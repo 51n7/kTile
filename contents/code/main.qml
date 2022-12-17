@@ -15,7 +15,6 @@ PlasmaCore.Dialog {
   visible: false
 
   property bool editMode: false
-  property bool restartButtonVisible: true
   property bool showNumbers: false
   property double gap: 10
 
@@ -53,6 +52,17 @@ PlasmaCore.Dialog {
     )
   }
 
+  function reDraw(id, width, height, x, y) {
+    var component = Qt.createComponent("block.qml")
+    var object = component.createObject(flowLayout, {
+      id: id,
+      boxWidth: width,
+      boxHeight: height,
+      boxX: x,
+      boxY: y
+    });
+  }
+
   ColumnLayout {
     id: mainColumnLayout
 
@@ -66,7 +76,6 @@ PlasmaCore.Dialog {
       
       PlasmaComponents.Button {
         icon.name: "list-add-symbolic"
-        visible: restartButtonVisible
         onClicked: {
 
           var db = LocalStorage.openDatabaseSync("QDeclarativeExampleDB", "1.0", "The Example QML SQL!", 1000000);
@@ -74,11 +83,9 @@ PlasmaCore.Dialog {
           db.transaction(
             function(tx) {
 
-              // tx.executeSql('DROP TABLE spaces');
-
-              tx.executeSql('CREATE TABLE IF NOT EXISTS spaces(width INTEGER, height INTEGER, x INTEGER, y INTEGER)');
+              tx.executeSql('CREATE TABLE IF NOT EXISTS spaces(rowid INTEGER PRIMARY KEY AUTOINCREMENT, width INTEGER, height INTEGER, x INTEGER, y INTEGER)');
               
-              var insert = tx.executeSql('INSERT INTO spaces VALUES(?, ?, ?, ?) RETURNING rowid', [ 50, 50, 0, 0 ]);
+              var insert = tx.executeSql('INSERT INTO spaces (rowid, width, height, x, y) VALUES((SELECT max(rowid) FROM spaces)+1, 50, 50, 0, 0) RETURNING rowid')
 
               var component = Qt.createComponent("block.qml")
               var object = component.createObject(flowLayout, {
@@ -88,6 +95,9 @@ PlasmaCore.Dialog {
                 boxX: 0,
                 boxY: 0
               });
+
+              // fix for intially added blocks listing vertically until kwin is reset
+              flowLayout.width = parent.parent.parent.width
             }
           )
         }
@@ -118,6 +128,7 @@ PlasmaCore.Dialog {
         id: scrollview1
         anchors.fill: parent
         anchors.margins: 10
+        // anchors.topMargin: 10
         clip: true
         ScrollBar.vertical.policy: ScrollBar.AlwaysOff
         
@@ -125,9 +136,6 @@ PlasmaCore.Dialog {
           width: parent.width
 
           Flow {
-            property int rowCount: parent.width / (200 + spacing)
-            property int rowWidth: rowCount * 200 + (rowCount - 1) * spacing
-            property int mar: (parent.width - rowWidth) / 2
 
             id: flowLayout
             width: parent.parent.width
@@ -205,8 +213,6 @@ PlasmaCore.Dialog {
 
     db.transaction(
       function(tx) {
-
-        // tx.executeSql('DROP TABLE grid');
 
         tx.executeSql('CREATE TABLE IF NOT EXISTS grid(x INTEGER, y INTEGER)');
 

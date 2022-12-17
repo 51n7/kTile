@@ -83,10 +83,20 @@ PlasmaComponents.Button {
           this.parent.parent.parent.destroy()
 
           var db = LocalStorage.openDatabaseSync("QDeclarativeExampleDB", "1.0", "The Example QML SQL!", 1000000);
-
+          
           db.transaction(
             function(tx) {
+
+              // rebuild Flow blocks - I dont love it..
               tx.executeSql('DELETE FROM spaces WHERE rowid = ' + id);
+              tx.executeSql('UPDATE sqlite_sequence SET seq = 0')
+              flowLayout.children = "";
+
+              var rs = tx.executeSql('SELECT rowid, * FROM spaces');
+              for (var i = 0; i < rs.rows.length; i++) {
+                tx.executeSql('UPDATE spaces SET rowid = ' + (i + 1) + ' WHERE rowid = ' + rs.rows.item(i).rowid)
+                reDraw((i + 1), rs.rows.item(i).width, rs.rows.item(i).height, rs.rows.item(i).x, rs.rows.item(i).y)
+              }
             }
           )
         }

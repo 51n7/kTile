@@ -1,6 +1,6 @@
 {
   "KPlugin": {
-    "Name": "ktile",
+    "Name": "kTile",
     "Description": "Create spaces to place windows in via grid",
     "Icon": "preferences-system-windows",
 
