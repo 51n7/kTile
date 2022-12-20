@@ -17,6 +17,7 @@ PlasmaCore.Dialog {
   property bool editMode: false
   property bool showNumbers: false
   property double gap: 10
+  property string database: "ktile"
 
   function show() {
     var screen = workspace.clientArea(KWin.FullScreenArea, workspace.activeScreen, workspace.currentDesktop);
@@ -30,7 +31,7 @@ PlasmaCore.Dialog {
 
     if (!window.normalWindow) return;
     let screen = workspace.clientArea(KWin.MaximizeArea, workspace.activeScreen, window.desktop);
-    let db = LocalStorage.openDatabaseSync("QDeclarativeExampleDB", "1.0", "The Example QML SQL!", 1000000);
+    let db = LocalStorage.openDatabaseSync(database, "1.0", "", 1000000);
 
     db.transaction(
       function(tx) {
@@ -73,13 +74,11 @@ PlasmaCore.Dialog {
         icon.name: "list-add-symbolic"
         onClicked: {
 
-          var db = LocalStorage.openDatabaseSync("QDeclarativeExampleDB", "1.0", "The Example QML SQL!", 1000000);
+          var db = LocalStorage.openDatabaseSync(database, "1.0", "", 1000000);
 
           db.transaction(
             function(tx) {
 
-              tx.executeSql('CREATE TABLE IF NOT EXISTS spaces(rowid INTEGER PRIMARY KEY AUTOINCREMENT, width INTEGER, height INTEGER, x INTEGER, y INTEGER)');
-              
               var insert = tx.executeSql('INSERT INTO spaces (rowid, width, height, x, y) VALUES((SELECT max(rowid) FROM spaces)+1, 50, 50, 0, 0) RETURNING rowid')
 
               var component = Qt.createComponent("block.qml")
@@ -140,7 +139,7 @@ PlasmaCore.Dialog {
               
               var component = Qt.createComponent("block.qml")
 
-              var db = LocalStorage.openDatabaseSync("QDeclarativeExampleDB", "1.0", "The Example QML SQL!", 1000000);
+              var db = LocalStorage.openDatabaseSync(database, "1.0", "", 1000000);
 
               db.transaction(
                 function(tx) {
@@ -201,11 +200,12 @@ PlasmaCore.Dialog {
     //   }
     // );
 
-    var db = LocalStorage.openDatabaseSync("QDeclarativeExampleDB", "1.0", "The Example QML SQL!", 1000000);
+    var db = LocalStorage.openDatabaseSync(database, "1.0", "", 1000000);
 
     db.transaction(
       function(tx) {
 
+        tx.executeSql('CREATE TABLE IF NOT EXISTS spaces(rowid INTEGER PRIMARY KEY AUTOINCREMENT, width INTEGER, height INTEGER, x INTEGER, y INTEGER)');
         tx.executeSql('CREATE TABLE IF NOT EXISTS grid(x INTEGER, y INTEGER, gap INTEGER)');
 
         var rs = tx.executeSql('SELECT rowid, * FROM grid');

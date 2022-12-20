@@ -76,7 +76,7 @@ Rectangle {
       PlasmaComponents.Button {
         icon.name: "checkbox"
         onClicked: {
-          var db = LocalStorage.openDatabaseSync("QDeclarativeExampleDB", "1.0", "The Example QML SQL!", 1000000);
+          var db = LocalStorage.openDatabaseSync(database, "1.0", "", 1000000);
 
           if(
             previewWidth !== 0 ||
@@ -258,7 +258,7 @@ Rectangle {
 
   Component.onCompleted: {
 
-    var db = LocalStorage.openDatabaseSync("QDeclarativeExampleDB", "1.0", "The Example QML SQL!", 1000000);
+    var db = LocalStorage.openDatabaseSync(database, "1.0", "", 1000000);
 
     db.transaction(
       function(tx) {

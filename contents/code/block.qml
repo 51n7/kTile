@@ -82,7 +82,7 @@ PlasmaComponents.Button {
 
           this.parent.parent.parent.destroy()
 
-          var db = LocalStorage.openDatabaseSync("QDeclarativeExampleDB", "1.0", "The Example QML SQL!", 1000000);
+          var db = LocalStorage.openDatabaseSync(database, "1.0", "", 1000000);
           
           db.transaction(
             function(tx) {
