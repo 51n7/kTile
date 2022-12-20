@@ -1,6 +1,6 @@
 # kTile
 
-This is a Kwin script that allows you to create a desktop region by grid selection and then let you quickly snap the window to that positon.
+This is a Kwin script that allows you to create a desktop regions by grid selection, then lets you quickly snap the window to that position.
 
 ![Screenshot_20221216_123040](https://user-images.githubusercontent.com/2657818/208176885-579e686c-7660-4eae-a91c-4d6d7f3d57a2.png)
 
