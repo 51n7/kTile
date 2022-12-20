@@ -8,11 +8,25 @@ This is a Kwin script that allows you to create a desktop region by grid selecti
 
 ## Installation
 
-- Clone repo to the following directory then log out and back in:
+### **Option 1:**
+
+- Copy `package` folder to the following directory and rename to `ktile`:
+
 ```
 ~/.local/share/kwin/scripts/
 ```
-- You will then see the newly added script in `System Settings -> Window Management -> KWin Scripts`
+
+- Log out and back in
+
+### **Option 2:**
+
+- Go to `System Settings -> Window Management -> KWin Scripts`
+- Click "Install from File..."
+- Select `kTile.kwinscript` from this repo
+
+### **Enable Script:**
+
+- Go to `System Settings -> Window Management -> KWin Scripts`
 - Select the kTile script and hit `Apply`:
 
 ![Screenshot_20221216_125031](https://user-images.githubusercontent.com/2657818/208177924-d9fe174b-3d93-4901-8663-f51af5411239.png)
@@ -40,6 +54,7 @@ Most of the configuration is done through the graphical interface however due to
 As this is my first time writing a Kwin script and using QML I realize there is a lot for me to refactor here. Any feedback would be much appreciated by creating a new [issue](https://github.com/jonbestdev/kTile/issues).
 
 ### TODO:
+
 - [x] ~~save custom grid size~~
 - [x] ~~bug with sqlite not reindexing table~~
 - [x] ~~allow gap resize~~
@@ -50,10 +65,3 @@ As this is my first time writing a Kwin script and using QML I realize there is 
 ## Special Thanks
 
 This would not be possible with out inspiration from [Moom](https://manytricks.com/moom/) and [Exquisite](https://github.com/qewer33/Exquisite), so many many thanks to both of these great apps.
-
-
-
-
-
-
-
