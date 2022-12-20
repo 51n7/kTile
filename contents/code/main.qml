@@ -17,6 +17,7 @@ PlasmaCore.Dialog {
   property bool editMode: false
   property bool showNumbers: false
   property double gap: 10
+  property double spacesCount: 0
   property string database: "ktile"
 
   function show() {
@@ -71,7 +72,32 @@ PlasmaCore.Dialog {
       }
       
       PlasmaComponents.Button {
+        id: add
         icon.name: "list-add-symbolic"
+
+        SequentialAnimation {
+          id: addAnim
+          loops: Animation.Infinite
+          alwaysRunToEnd: true
+
+          // expand the button
+          PropertyAnimation {
+            target: add
+            property: "scale"
+            to: 1.2
+            duration: 350
+            easing.type: Easing.InOutQuad
+          }
+
+          // shrink back to normal
+          PropertyAnimation {
+            target: add
+            property: "scale"
+            to: 1.0
+            duration: 350
+            easing.type: Easing.InOutQuad
+          }
+        }
         onClicked: {
 
           var db = LocalStorage.openDatabaseSync(database, "1.0", "", 1000000);
@@ -90,10 +116,19 @@ PlasmaCore.Dialog {
                 boxY: 0
               });
 
+              addAnim.stop()
+
               // fix for intially added blocks listing vertically until kwin is reset
               flowLayout.width = parent.parent.parent.width
             }
           )
+        }
+        Component.onCompleted: {
+          if(spacesCount) {
+            addAnim.stop()
+          } else {
+            addAnim.start()
+          }
         }
       }
 
@@ -153,6 +188,8 @@ PlasmaCore.Dialog {
                       boxY: rs.rows.item(i).y
                     });
                   }
+
+                  spacesCount = rs.rows.length
                 }
               )
             }
