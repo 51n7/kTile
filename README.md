@@ -2,9 +2,9 @@
 
 This is a Kwin script that allows you to create a desktop regions by grid selection, then lets you quickly snap the window to that position.
 
-![Screenshot_20221216_123040](https://user-images.githubusercontent.com/2657818/208176885-579e686c-7660-4eae-a91c-4d6d7f3d57a2.png)
+![Screenshot_20221221_115414](https://user-images.githubusercontent.com/2657818/208982895-5da85ebd-4e41-42d2-afb8-50ddb1d2ec0b.png)
 
-![Screenshot_20221216_123429](https://user-images.githubusercontent.com/2657818/208176916-75d1e906-c494-4bf8-b4c6-abc486a87512.png)
+![Screenshot_20221221_115907](https://user-images.githubusercontent.com/2657818/208982924-7f7a7c0b-17b5-41dc-9a74-7105dc766426.png)
 
 ## Installation
 
