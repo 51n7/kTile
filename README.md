@@ -46,6 +46,14 @@ Most of the configuration is done through the graphical interface however due to
 
 ![Screenshot_20221216_124805](https://user-images.githubusercontent.com/2657818/208177894-e6365378-6ea2-4216-b7c8-e89afb5c7ccd.png)
 
+## Known Issues
+
+If you're using this script on KDE Neon you will need to install the following package:
+
+```
+sudo pkcon install qml-module-qtquick-localstorage
+```
+
 ## Technical Notes
 
 - This application is written 100% in QML.
