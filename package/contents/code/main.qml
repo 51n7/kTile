@@ -40,8 +40,8 @@ PlasmaCore.Dialog {
 
         let newWidth = ((rs.rows[0].width / 100) * (screen.width - gap)) - gap
         let newHeight = ((rs.rows[0].height / 100) * (screen.height - gap)) - gap
-        let newX = ((rs.rows[0].x / 100) * (screen.width - gap)) + gap
-        let newY = ((rs.rows[0].y / 100) * (screen.height - gap)) + gap
+        let newX = ((rs.rows[0].x / 100) * (screen.width - gap)) + gap + screen.x
+        let newY = ((rs.rows[0].y / 100) * (screen.height - gap)) + gap + screen.y
 
         window.setMaximize(false, false);
         window.geometry = Qt.rect(newX, newY, newWidth, newHeight);

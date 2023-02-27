@@ -48,10 +48,18 @@ Most of the configuration is done through the graphical interface however due to
 
 ## Known Issues
 
-If you're using this script on KDE Neon you will need to install the following package:
+If you're using this script on KDE Neon or Kubuntu you will need to install the following package:
+
+### KDE Neon
 
 ```
 sudo pkcon install qml-module-qtquick-localstorage
+```
+
+### Kubuntu
+
+```
+sudo apt-get install qml-module-qtquick-localstorage
 ```
 
 ## Technical Notes
