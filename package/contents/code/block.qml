@@ -11,6 +11,7 @@ PlasmaComponents.Button {
   property double boxHeight
   property double boxX
   property double boxY
+  property double displayNum
   
   width: 200
   height: 120
@@ -70,7 +71,8 @@ PlasmaComponents.Button {
             setWidth: boxWidth,
             setHeight: boxHeight,
             setX: boxX,
-            setY: boxY
+            setY: boxY,
+            setDisplay: displayNum
           });
           mainColumnLayout.visible = false;
         }
@@ -88,14 +90,14 @@ PlasmaComponents.Button {
             function(tx) {
 
               // rebuild Flow blocks - I dont love it..
-              tx.executeSql('DELETE FROM spaces WHERE rowid = ' + id);
+              tx.executeSql('DELETE FROM spaces2 WHERE rowid = ' + id);
               tx.executeSql('UPDATE sqlite_sequence SET seq = 0')
               flowLayout.children = "";
 
-              var rs = tx.executeSql('SELECT rowid, * FROM spaces');
+              var rs = tx.executeSql('SELECT rowid, * FROM spaces2');
               for (var i = 0; i < rs.rows.length; i++) {
-                tx.executeSql('UPDATE spaces SET rowid = ' + (i + 1) + ' WHERE rowid = ' + rs.rows.item(i).rowid)
-                reDraw((i + 1), rs.rows.item(i).width, rs.rows.item(i).height, rs.rows.item(i).x, rs.rows.item(i).y)
+                tx.executeSql('UPDATE spaces2 SET rowid = ' + (i + 1) + ' WHERE rowid = ' + rs.rows.item(i).rowid)
+                reDraw((i + 1), rs.rows.item(i).width, rs.rows.item(i).height, rs.rows.item(i).x, rs.rows.item(i).y, rs.rows.item(i).display)
               }
             }
           )

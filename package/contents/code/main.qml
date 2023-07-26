@@ -7,6 +7,8 @@ import org.kde.plasma.components 3.0 as PlasmaComponents
 import org.kde.kwin 2.0
 import QtQuick.LocalStorage 2.15
 
+// API Docs: https://develop.kde.org/docs/plasma/kwin/api/
+
 PlasmaCore.Dialog {
   id: mainDialog
 
@@ -19,11 +21,22 @@ PlasmaCore.Dialog {
   property double gap: 10
   property double spacesCount: 0
   property string database: "ktile"
+  property double lastPressTime: 0
+  property double doublePressDelay: 500
+  property variant screenList: getScreens()
+
+  function getScreens() {
+    var tmpList = []
+
+    for (var i = 0; i < workspace.numScreens; i++) {
+      tmpList.push("Display " + (i + 1))
+    }
+    return tmpList
+  }
 
   function show() {
     var screen = workspace.clientArea(KWin.FullScreenArea, workspace.activeScreen, workspace.currentDesktop);
     mainDialog.visible = true;
-
     mainDialog.x = screen.x + screen.width/2 - mainDialog.width/2;
     mainDialog.y = screen.y + screen.height/2 - mainDialog.height/2;
   }
@@ -36,7 +49,7 @@ PlasmaCore.Dialog {
 
     db.transaction(
       function(tx) {
-        const rs = tx.executeSql('SELECT rowid, * FROM spaces WHERE rowid = ' + pos);
+        const rs = tx.executeSql('SELECT rowid, * FROM spaces2 WHERE rowid = ' + pos);
 
         let newWidth = ((rs.rows[0].width / 100) * (screen.width - gap)) - gap
         let newHeight = ((rs.rows[0].height / 100) * (screen.height - gap)) - gap
@@ -45,11 +58,22 @@ PlasmaCore.Dialog {
 
         window.setMaximize(false, false);
         window.geometry = Qt.rect(newX, newY, newWidth, newHeight);
+
+        workspace.sendClientToScreen(window, rs.rows[0].display)
+
+        // var currentTime = new Date().getTime();
+        // if (currentTime - lastPressTime < doublePressDelay) {
+        //   // double press action
+        //   workspace.slotWindowToNextScreen()
+        // } else {
+        //   // single press action
+        // }
+        // lastPressTime = currentTime;
       }
     )
   }
 
-  function reDraw(id, width, height, x, y) {
+  function reDraw(id, width, height, x, y, display) {
     var component = Qt.createComponent("block.qml")
     var object = component.createObject(flowLayout, {
       id: id,
@@ -105,7 +129,7 @@ PlasmaCore.Dialog {
           db.transaction(
             function(tx) {
 
-              var insert = tx.executeSql('INSERT INTO spaces (rowid, width, height, x, y) VALUES((SELECT max(rowid) FROM spaces)+1, 50, 50, 0, 0) RETURNING rowid')
+              var insert = tx.executeSql('INSERT INTO spaces2 (rowid, width, height, x, y, display) VALUES((SELECT max(rowid) FROM spaces2)+1, 50, 50, 0, 0, 0) RETURNING rowid')
 
               var component = Qt.createComponent("block.qml")
               var object = component.createObject(flowLayout, {
@@ -113,7 +137,8 @@ PlasmaCore.Dialog {
                 boxWidth: 50,
                 boxHeight: 50,
                 boxX: 0,
-                boxY: 0
+                boxY: 0,
+                displayNum: 0,
               });
 
               addAnim.stop()
@@ -178,14 +203,15 @@ PlasmaCore.Dialog {
 
               db.transaction(
                 function(tx) {
-                  var rs = tx.executeSql('SELECT rowid, * FROM spaces');
+                  var rs = tx.executeSql('SELECT rowid, * FROM spaces2');
                   for (var i = 0; i < rs.rows.length; i++) {
                     var object = component.createObject(flowLayout, {
                       id: rs.rows.item(i).rowid,
                       boxWidth: rs.rows.item(i).width,
                       boxHeight: rs.rows.item(i).height,
                       boxX: rs.rows.item(i).x,
-                      boxY: rs.rows.item(i).y
+                      boxY: rs.rows.item(i).y,
+                      displayNum: rs.rows.item(i).display
                     });
                   }
 
@@ -242,7 +268,7 @@ PlasmaCore.Dialog {
     db.transaction(
       function(tx) {
 
-        tx.executeSql('CREATE TABLE IF NOT EXISTS spaces(rowid INTEGER PRIMARY KEY AUTOINCREMENT, width INTEGER, height INTEGER, x INTEGER, y INTEGER)');
+        tx.executeSql('CREATE TABLE IF NOT EXISTS spaces2(rowid INTEGER PRIMARY KEY AUTOINCREMENT, width INTEGER, height INTEGER, x INTEGER, y INTEGER, display INTEGER)');
         tx.executeSql('CREATE TABLE IF NOT EXISTS grid(x INTEGER, y INTEGER, gap INTEGER)');
 
         var rs = tx.executeSql('SELECT rowid, * FROM grid');

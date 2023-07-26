@@ -24,6 +24,7 @@ Rectangle {
   property string backgroundColor: "#5f5f5f"
   property string selectionColor: "#ffffff"
   property string hoverColor: "#4996ff"
+  property double setDisplay: 0
 
   id: edit
   color: "transparent"
@@ -67,6 +68,29 @@ Rectangle {
         }
       }
 
+      PlasmaComponents.Label {
+        text: "|"
+      }
+
+      ComboBox {
+        id: displayCombo
+        width: 200
+        model: screenList
+        visible: screenList.length !== 0
+        property bool isInitializing: true
+
+        onCurrentIndexChanged: {
+          if (!isInitializing) {
+            setDisplay = displayCombo.currentIndex
+          }
+        }
+        
+        Component.onCompleted: {
+          displayCombo.currentIndex = setDisplay;
+          isInitializing = false;
+        }
+      }
+
       PlasmaComponents.Button {
         Layout.fillWidth: true
         enabled: false
@@ -77,6 +101,7 @@ Rectangle {
         icon.name: "checkbox"
         onClicked: {
           var db = LocalStorage.openDatabaseSync(database, "1.0", "", 1000000);
+          var preview = flowLayout.children[(id - 1)]
 
           if(
             previewWidth !== 0 ||
@@ -84,8 +109,7 @@ Rectangle {
             previewX !== 0 ||
             previewY !== 0
             ) {
-            var preview = flowLayout.children[(id - 1)]
-
+            
             preview.boxWidth = (100 * previewWidth) / grid.width
             preview.boxHeight = (100 * previewHeight) / grid.height
             preview.boxX = (100 * previewX) / grid.width
@@ -93,10 +117,16 @@ Rectangle {
             
             db.transaction(
               function(tx) {
-                tx.executeSql('UPDATE spaces SET width = '+ preview.boxWidth +', height = '+ preview.boxHeight +', x = '+ preview.boxX +', y = '+ preview.boxY +' WHERE rowid = ' + id);
+                tx.executeSql('UPDATE spaces2 SET width = '+ preview.boxWidth +', height = '+ preview.boxHeight +', x = '+ preview.boxX +', y = '+ preview.boxY +' WHERE rowid = ' + id);
               }
             )
           }
+
+          db.transaction(
+            function(tx) {
+              tx.executeSql('UPDATE spaces2 SET display = '+ setDisplay +' WHERE rowid = ' + id);
+            }
+          )
 
           db.transaction(
             function(tx) {
@@ -104,6 +134,7 @@ Rectangle {
             }
           )
 
+          preview.displayNum = setDisplay
           this.parent.parent.parent.destroy()
           mainColumnLayout.visible = true;
         }
