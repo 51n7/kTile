@@ -26,7 +26,7 @@ PlasmaCore.Dialog {
   property variant screenList: getScreens()
 
   function getScreens() {
-    var tmpList = []
+    var tmpList = ['Auto Display']
 
     for (var i = 0; i < workspace.numScreens; i++) {
       tmpList.push("Display " + (i + 1))
@@ -55,11 +55,14 @@ PlasmaCore.Dialog {
         let newHeight = ((rs.rows[0].height / 100) * (screen.height - gap)) - gap
         let newX = ((rs.rows[0].x / 100) * (screen.width - gap)) + gap + screen.x
         let newY = ((rs.rows[0].y / 100) * (screen.height - gap)) + gap + screen.y
+        let getDisplay = rs.rows[0].display
 
         window.setMaximize(false, false);
         window.geometry = Qt.rect(newX, newY, newWidth, newHeight);
 
-        workspace.sendClientToScreen(window, rs.rows[0].display)
+        if(getDisplay !== 0) {
+          workspace.sendClientToScreen(window, getDisplay - 1)
+        }
 
         // var currentTime = new Date().getTime();
         // if (currentTime - lastPressTime < doublePressDelay) {

@@ -70,13 +70,14 @@ Rectangle {
 
       PlasmaComponents.Label {
         text: "|"
+        visible: screenList.length > 2
       }
 
       ComboBox {
         id: displayCombo
         width: 200
         model: screenList
-        visible: screenList.length !== 0
+        visible: screenList.length > 2
         property bool isInitializing: true
 
         onCurrentIndexChanged: {
