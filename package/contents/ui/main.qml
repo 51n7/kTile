@@ -1,11 +1,12 @@
-import QtQuick 2.0
-import QtQuick.Layouts 1.0
-import QtQuick.Window 2.12
-import QtQuick.Controls 2.12
-import org.kde.plasma.core 2.0 as PlasmaCore
-import org.kde.plasma.components 3.0 as PlasmaComponents
-import org.kde.kwin 2.0
-import QtQuick.LocalStorage 2.15
+import QtQuick
+import QtQuick.Layouts
+import QtQuick.Window
+import QtQuick.Controls
+import org.kde.plasma.core as PlasmaCore
+import org.kde.plasma.components as PlasmaComponents
+import "components" as Components
+import org.kde.kwin // defines "Workspace"
+import QtQuick.LocalStorage
 
 // API Docs: https://develop.kde.org/docs/plasma/kwin/api/
 
@@ -15,36 +16,32 @@ PlasmaCore.Dialog {
   location: PlasmaCore.Types.Floating
   flags: Qt.X11BypassWindowManagerHint | Qt.FramelessWindowHint
   visible: false
-
   property bool editMode: false
   property bool showNumbers: false
   property double gap: 10
-  property double spacesCount: 0
   property string database: "ktile"
   property double lastPressTime: 0
   property double doublePressDelay: 500
-  property variant screenList: getScreens()
-
-  function getScreens() {
-    var tmpList = ['Auto Display']
-
-    for (var i = 0; i < workspace.numScreens; i++) {
-      tmpList.push("Display " + (i + 1))
-    }
-    return tmpList
-  }
+  property var spaces: []
 
   function show() {
-    var screen = workspace.clientArea(KWin.FullScreenArea, workspace.activeScreen, workspace.currentDesktop);
+    var screen = Workspace.clientArea(KWin.FullScreenArea, Workspace.activeScreen, Workspace.currentDesktop);
     mainDialog.visible = true;
     mainDialog.x = screen.x + screen.width/2 - mainDialog.width/2;
     mainDialog.y = screen.y + screen.height/2 - mainDialog.height/2;
+
+    // mainDialog.width = screen.width/2;
+    // mainDialog.height = screen.height/2;
+
+    // spacesContainer.width = 850;
+    // spacesContainer.height = 400;
   }
 
   function tileWindow(window, pos) {
 
     if (!window.normalWindow) return;
-    let screen = workspace.clientArea(KWin.MaximizeArea, workspace.activeScreen, window.desktop);
+    // let screen = Workspace.clientArea(KWin.MaximizeArea, Workspace.activeScreen, window.desktop);
+    var screen = Workspace.clientArea(KWin.FullScreenArea, Workspace.activeScreen, Workspace.currentDesktop);
     let db = LocalStorage.openDatabaseSync(database, "1.0", "", 1000000);
 
     db.transaction(
@@ -58,11 +55,12 @@ PlasmaCore.Dialog {
         let getDisplay = rs.rows[0].display
 
         window.setMaximize(false, false);
-        window.geometry = Qt.rect(newX, newY, newWidth, newHeight);
+        window.frameGeometry = Qt.rect(newX, newY, newWidth, newHeight);
+        print(newX, newY, newWidth, newHeight);
 
-        if(getDisplay !== 0) {
-          workspace.sendClientToScreen(window, getDisplay - 1)
-        }
+        // if(getDisplay !== 0) {
+        //   workspace.sendClientToScreen(window, getDisplay - 1)
+        // }
 
         // var currentTime = new Date().getTime();
         // if (currentTime - lastPressTime < doublePressDelay) {
@@ -76,15 +74,38 @@ PlasmaCore.Dialog {
     )
   }
 
-  function reDraw(id, width, height, x, y, display) {
-    var component = Qt.createComponent("block.qml")
-    var object = component.createObject(flowLayout, {
-      id: id,
-      boxWidth: width,
-      boxHeight: height,
-      boxX: x,
-      boxY: y
-    });
+  Item {
+    id: shortcuts
+
+    ShortcutHandler {
+      id: mainShortcut
+      name: "kTile"
+      text: "kTile"
+      sequence: "Ctrl+."
+      onActivated: {
+        print('press')
+
+        if (mainDialog.visible) {
+          mainDialog.visible = false;
+        } else {
+          mainDialog.show();
+        }
+      }
+    }
+
+    Repeater {
+      model: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+      delegate: Item {
+        ShortcutHandler {
+          name: "kTile Position " + (index + 1)
+          text: "kTile Position " + (index + 1)
+          sequence: ""
+          onActivated: {
+            tileWindow(Workspace.activeWindow, (index + 1));
+          }
+        }
+      }
+    }
   }
 
   ColumnLayout {
@@ -107,7 +128,7 @@ PlasmaCore.Dialog {
           loops: Animation.Infinite
           alwaysRunToEnd: true
 
-          // expand the button
+          // animate: expand the button
           PropertyAnimation {
             target: add
             property: "scale"
@@ -116,7 +137,7 @@ PlasmaCore.Dialog {
             easing.type: Easing.InOutQuad
           }
 
-          // shrink back to normal
+          // animate: shrink back to normal
           PropertyAnimation {
             target: add
             property: "scale"
@@ -127,32 +148,32 @@ PlasmaCore.Dialog {
         }
         onClicked: {
 
-          var db = LocalStorage.openDatabaseSync(database, "1.0", "", 1000000);
+          // var db = LocalStorage.openDatabaseSync(database, "1.0", "", 1000000);
 
-          db.transaction(
-            function(tx) {
+          // db.transaction(
+          //   function(tx) {
 
-              var insert = tx.executeSql('INSERT INTO spaces2 (rowid, width, height, x, y, display) VALUES((SELECT max(rowid) FROM spaces2)+1, 50, 50, 0, 0, 0) RETURNING rowid')
+          //     var insert = tx.executeSql('INSERT INTO spaces2 (rowid, width, height, x, y, display) VALUES((SELECT max(rowid) FROM spaces2)+1, 50, 50, 0, 0, 0) RETURNING rowid')
 
-              var component = Qt.createComponent("block.qml")
-              var object = component.createObject(flowLayout, {
-                id: insert.rows[0].rowid,
-                boxWidth: 50,
-                boxHeight: 50,
-                boxX: 0,
-                boxY: 0,
-                displayNum: 0,
-              });
+          //     var component = Qt.createComponent("block.qml")
+          //     var object = component.createObject(flowLayout, {
+          //       id: insert.rows[0].rowid,
+          //       boxWidth: 50,
+          //       boxHeight: 50,
+          //       boxX: 0,
+          //       boxY: 0,
+          //       displayNum: 0,
+          //     });
 
-              addAnim.stop()
+          //     addAnim.stop()
 
-              // fix for intially added blocks listing vertically until kwin is reset
-              flowLayout.width = parent.parent.parent.width
-            }
-          )
+          //     // fix for intially added blocks listing vertically until kwin is reset
+          //     flowLayout.width = parent.parent.parent.width
+          //   }
+          // )
         }
         Component.onCompleted: {
-          if(spacesCount) {
+          if(spaces.length) {
             addAnim.stop()
           } else {
             addAnim.start()
@@ -193,78 +214,52 @@ PlasmaCore.Dialog {
           width: parent.width
 
           Flow {
-
             id: flowLayout
-            width: parent.parent.width
+            width: parent.width
             spacing: 10
+
+            Repeater {
+              id: repeaterLayouts
+              model: spaces
+
+              Components.Block {
+                block: spaces[index]
+              }
+            }
 
             Component.onCompleted: {
               
-              var component = Qt.createComponent("block.qml")
-
               var db = LocalStorage.openDatabaseSync(database, "1.0", "", 1000000);
+              var space = []
 
               db.transaction(
                 function(tx) {
                   var rs = tx.executeSql('SELECT rowid, * FROM spaces2');
                   for (var i = 0; i < rs.rows.length; i++) {
-                    var object = component.createObject(flowLayout, {
+                    space.push({
                       id: rs.rows.item(i).rowid,
                       boxWidth: rs.rows.item(i).width,
                       boxHeight: rs.rows.item(i).height,
                       boxX: rs.rows.item(i).x,
                       boxY: rs.rows.item(i).y,
                       displayNum: rs.rows.item(i).display
-                    });
+                    })
                   }
-
-                  spacesCount = rs.rows.length
                 }
               )
+
+              // print(JSON.stringify(spaces));
+
+              spaces = space
             }
           }
         }
       }
     }
   }
-
+  
   Component.onCompleted: {
-
-    KWin.registerWindow(mainDialog);
-
-    KWin.registerShortcut(
-      "kTile",
-      "kTile",
-      "Ctrl+.",
-      function() {
-        if (mainDialog.visible) {
-          mainDialog.visible = false;
-        } else {
-          mainDialog.show();
-        }
-      }
-    );
-
-    for (var i = 1; i <= 12; i++) {
-      let count = i
-      KWin.registerShortcut(
-        "kTile Position " + count,
-        "kTile Position " + count,
-        "",
-        function() {
-          tileWindow(workspace.activeClient, count);
-        }
-      );
-    }
-
-    // KWin.registerShortcut(
-    //   "kTile Close",
-    //   "kTile Close",
-    //   "Escape",
-    //   function() {
-    //     mainDialog.visible = false;
-    //   }
-    // );
+    print('onCompleted - ktile')
 
     var db = LocalStorage.openDatabaseSync(database, "1.0", "", 1000000);
 

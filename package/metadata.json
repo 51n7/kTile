@@ -1,23 +1,19 @@
 {
+  "KPackageStructure": "KWin/Script",
   "KPlugin": {
-    "Name": "kTile",
-    "Description": "Create spaces to place windows in via grid",
-    "Icon": "preferences-system-windows",
-
     "Authors": [
       {
         "Email": "smile@jonbest.ca",
         "Name": "Jon Best"
       }
     ],
+    "Description": "ktile",
+    "Icon": "preferences-system-windows",
     "Id": "ktile",
-    "ServiceTypes": [
-      "KWin/Script"
-    ],
-    "Version": "1.0",
-    "Licsense": "GPLv3",
-    "Website": "https://github.com/jonbestdev/ktile"
+    "License": "MIT",
+    "Name": "kTile"
   },
   "X-Plasma-API": "declarativescript",
-  "X-Plasma-MainScript": "code/main.qml"
+  "X-Plasma-MainScript": "ui/main.qml",
+  "X-Plasma-API-Minimum-Version": "6.0"
 }
