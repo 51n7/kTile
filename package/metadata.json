@@ -1,19 +1,23 @@
 {
   "KPackageStructure": "KWin/Script",
   "KPlugin": {
+    "Name": "kTile",
+    "Description": "ktile",
+    "Icon": "preferences-system-windows",
     "Authors": [
       {
         "Email": "smile@jonbest.ca",
         "Name": "Jon Best"
       }
     ],
-    "Description": "ktile",
-    "Icon": "preferences-system-windows",
     "Id": "ktile",
-    "License": "MIT",
-    "Name": "kTile"
+    "ServiceTypes": [
+      "KWin/Script"
+    ],
+    "Version": "1.0",
+    "Licsense": "GPLv3",
+    "Website": ""
   },
   "X-Plasma-API": "declarativescript",
-  "X-Plasma-MainScript": "ui/main.qml",
-  "X-Plasma-API-Minimum-Version": "6.0"
+  "X-Plasma-MainScript": "ui/main.qml"
 }

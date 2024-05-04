@@ -7,7 +7,12 @@ import org.kde.kwin
 import QtQuick.LocalStorage
 
 PlasmaComponents.Button {
-  property var block: {}
+  property int id
+  property double boxWidth
+  property double boxHeight
+  property double boxX
+  property double boxY
+  property double displayNum
   width: 200
   height: 120
 
@@ -21,24 +26,24 @@ PlasmaComponents.Button {
     hoverEnabled: true
 
     onClicked: {
-      tileWindow(Workspace.activeWindow, block.id);
+      tileWindow(Workspace.activeWindow, id);
       mainDialog.visible = false
     }
 
     PlasmaComponents.Button {
-      width: ((block.boxWidth / 100) * parent.width)
-      height: ((block.boxHeight / 100) * parent.height)
-      x: ((block.boxX / 100) * parent.width)
-      y: ((block.boxY / 100) * parent.height)
+      width: ((boxWidth / 100) * parent.width)
+      height: ((boxHeight / 100) * parent.height)
+      x: ((boxX / 100) * parent.width)
+      y: ((boxY / 100) * parent.height)
       visible: !parent.isHovered
     }
 
     // fake the button hover state
     PlasmaComponents.Button {
-      width: ((block.boxWidth / 100) * parent.width)
-      height: ((block.boxHeight / 100) * parent.height)
-      x: ((block.boxX / 100) * parent.width)
-      y: ((block.boxY / 100) * parent.height)
+      width: ((boxWidth / 100) * parent.width)
+      height: ((boxHeight / 100) * parent.height)
+      x: ((boxX / 100) * parent.width)
+      y: ((boxY / 100) * parent.height)
       visible: parent.isHovered
       signal hovered()
 
@@ -46,7 +51,7 @@ PlasmaComponents.Button {
         anchors.fill: parent
 
         onClicked: {
-          tileWindow(Workspace.activeWindow, block.id);
+          tileWindow(Workspace.activeWindow, id);
           mainDialog.visible = false
         }
       }
@@ -56,20 +61,22 @@ PlasmaComponents.Button {
       anchors.top: parent.top
       anchors.right: parent.right
       visible: parent.isHovered
-
+      
       PlasmaComponents.Button {
         icon.name: "edit-entry"
         onClicked: {
-          // var component = Qt.createComponent("edit.qml")
-          // component.createObject(mainDialog, {
-          //   id: id,
-          //   setWidth: boxWidth,
-          //   setHeight: boxHeight,
-          //   setX: boxX,
-          //   setY: boxY,
-          //   setDisplay: displayNum
-          // });
-          // mainColumnLayout.visible = false;
+          
+          var component = Qt.createComponent("Edit.qml")
+          component.createObject(mainDialog, {
+            id: id,
+            setWidth: boxWidth,
+            setHeight: boxHeight,
+            setX: boxX,
+            setY: boxY,
+            setDisplay: displayNum
+          });
+
+          mainColumnLayout.visible = false;
         }
       }
 
@@ -77,32 +84,32 @@ PlasmaComponents.Button {
         icon.name: "edit-delete-symbolic"
         onClicked: {
 
-          // this.parent.parent.parent.destroy()
+          this.parent.parent.parent.destroy()
 
-          // var db = LocalStorage.openDatabaseSync(database, "1.0", "", 1000000);
+          var db = LocalStorage.openDatabaseSync(database, "1.0", "", 1000000);
           
-          // db.transaction(
-          //   function(tx) {
+          db.transaction(
+            function(tx) {
 
-          //     // rebuild Flow blocks - I dont love it..
-          //     tx.executeSql('DELETE FROM spaces2 WHERE rowid = ' + block.id);
-          //     tx.executeSql('UPDATE sqlite_sequence SET seq = 0')
-          //     flowLayout.children = "";
+              // looking at this a year later, why am I using the sql index..?
+              tx.executeSql('DELETE FROM spaces2 WHERE rowid = ' + id);
+              tx.executeSql('UPDATE sqlite_sequence SET seq = 0')
+              flowLayout.children = "";
 
-          //     var rs = tx.executeSql('SELECT rowid, * FROM spaces2');
-          //     for (var i = 0; i < rs.rows.length; i++) {
-          //       tx.executeSql('UPDATE spaces2 SET rowid = ' + (i + 1) + ' WHERE rowid = ' + rs.rows.item(i).rowid)
-          //       reDraw((i + 1), rs.rows.item(i).width, rs.rows.item(i).height, rs.rows.item(i).x, rs.rows.item(i).y, rs.rows.item(i).display)
-          //     }
-          //   }
-          // )
+              var rs = tx.executeSql('SELECT rowid, * FROM spaces2');
+              for (var i = 0; i < rs.rows.length; i++) {
+                tx.executeSql('UPDATE spaces2 SET rowid = ' + (i + 1) + ' WHERE rowid = ' + rs.rows.item(i).rowid)
+                reDraw((i + 1), rs.rows.item(i).width, rs.rows.item(i).height, rs.rows.item(i).x, rs.rows.item(i).y, rs.rows.item(i).display)
+              }
+            }
+          )
         }
       }
     }
   }
 
   Text {
-    text: block.id
+    text: id
     font.pointSize: 38
     anchors.centerIn: parent
     opacity: 0.2
