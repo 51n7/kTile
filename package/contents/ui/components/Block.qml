@@ -1,9 +1,10 @@
-import QtQuick 2.0
-import QtQuick.Layouts 1.0
-import QtQuick.Controls 2.12
-import QtQuick.LocalStorage 2.15
-import org.kde.plasma.core 2.0 as PlasmaCore
-import org.kde.plasma.components 3.0 as PlasmaComponents
+import QtQuick
+import QtQuick.Layouts
+import QtQuick.Controls
+import org.kde.plasma.core as PlasmaCore
+import org.kde.plasma.components as PlasmaComponents
+import org.kde.kwin
+import QtQuick.LocalStorage
 
 PlasmaComponents.Button {
   property int id
@@ -12,7 +13,6 @@ PlasmaComponents.Button {
   property double boxX
   property double boxY
   property double displayNum
-  
   width: 200
   height: 120
 
@@ -26,7 +26,7 @@ PlasmaComponents.Button {
     hoverEnabled: true
 
     onClicked: {
-      tileWindow(workspace.activeClient, id);
+      tileWindow(Workspace.activeWindow, id);
       mainDialog.visible = false
     }
 
@@ -45,13 +45,13 @@ PlasmaComponents.Button {
       x: ((boxX / 100) * parent.width)
       y: ((boxY / 100) * parent.height)
       visible: parent.isHovered
-      signal hovered()
+      // signal hovered()
 
       MouseArea {
         anchors.fill: parent
 
         onClicked: {
-          tileWindow(workspace.activeClient, id);
+          tileWindow(Workspace.activeWindow, id);
           mainDialog.visible = false
         }
       }
@@ -61,11 +61,12 @@ PlasmaComponents.Button {
       anchors.top: parent.top
       anchors.right: parent.right
       visible: parent.isHovered
-
+      
       PlasmaComponents.Button {
         icon.name: "edit-entry"
         onClicked: {
-          var component = Qt.createComponent("edit.qml")
+          
+          var component = Qt.createComponent("Edit.qml")
           component.createObject(mainDialog, {
             id: id,
             setWidth: boxWidth,
@@ -74,6 +75,7 @@ PlasmaComponents.Button {
             setY: boxY,
             setDisplay: displayNum
           });
+
           mainColumnLayout.visible = false;
         }
       }
@@ -89,7 +91,7 @@ PlasmaComponents.Button {
           db.transaction(
             function(tx) {
 
-              // rebuild Flow blocks - I dont love it..
+              // looking at this a year later, why am I using the sql index..?
               tx.executeSql('DELETE FROM spaces2 WHERE rowid = ' + id);
               tx.executeSql('UPDATE sqlite_sequence SET seq = 0')
               flowLayout.children = "";
