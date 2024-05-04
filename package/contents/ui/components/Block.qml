@@ -45,7 +45,7 @@ PlasmaComponents.Button {
       x: ((boxX / 100) * parent.width)
       y: ((boxY / 100) * parent.height)
       visible: parent.isHovered
-      signal hovered()
+      // signal hovered()
 
       MouseArea {
         anchors.fill: parent

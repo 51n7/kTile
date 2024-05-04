@@ -36,7 +36,9 @@ Rectangle {
 
     RowLayout {
 
-      SpinBox {
+      PlasmaComponents.SpinBox {
+        width: 0 // fix for binding loop console error - no idea why
+        height: 0 // fix for binding loop console error - no idea why
         value: cols
         onValueChanged: {
           cols = value
@@ -48,7 +50,9 @@ Rectangle {
         text: "x"
       }
 
-      SpinBox {
+      PlasmaComponents.SpinBox {
+        width: 0
+        height: 0
         value: rows
         onValueChanged: {
           rows = value
@@ -60,7 +64,9 @@ Rectangle {
         text: "|"
       }
 
-      SpinBox {
+      PlasmaComponents.SpinBox {
+        width: 0
+        height: 0
         value: gap
         to: 24
         onValueChanged: {
@@ -68,29 +74,29 @@ Rectangle {
         }
       }
 
-      // PlasmaComponents.Label {
-      //   text: "|"
-      //   visible: screenList.length > 2
-      // }
+      PlasmaComponents.Label {
+        text: "|"
+        visible: screenList.length > 2
+      }
 
-      // ComboBox {
-      //   id: displayCombo
-      //   width: 200
-      //   model: screenList
-      //   visible: screenList.length > 2
-      //   property bool isInitializing: true
+      PlasmaComponents.ComboBox {
+        id: displayCombo
+        width: 200
+        model: screenList
+        visible: screenList.length > 2
+        property bool isInitializing: true
 
-      //   onCurrentIndexChanged: {
-      //     if (!isInitializing) {
-      //       setDisplay = displayCombo.currentIndex
-      //     }
-      //   }
+        onCurrentIndexChanged: {
+          if (!isInitializing) {
+            setDisplay = displayCombo.currentIndex
+          }
+        }
         
-      //   Component.onCompleted: {
-      //     displayCombo.currentIndex = setDisplay;
-      //     isInitializing = false;
-      //   }
-      // }
+        Component.onCompleted: {
+          displayCombo.currentIndex = (setDisplay + 1);
+          isInitializing = false;
+        }
+      }
 
       PlasmaComponents.Button {
         Layout.fillWidth: true
@@ -103,6 +109,7 @@ Rectangle {
         onClicked: {
           var db = LocalStorage.openDatabaseSync(database, "1.0", "", 1000000);
           var preview = flowLayout.children[(id - 1)]
+          var displayNum = (setDisplay - 1);
 
           if(
             previewWidth !== 0 ||
@@ -125,7 +132,7 @@ Rectangle {
 
           db.transaction(
             function(tx) {
-              tx.executeSql('UPDATE spaces2 SET display = '+ setDisplay +' WHERE rowid = ' + id);
+              tx.executeSql('UPDATE spaces2 SET display = '+ displayNum +' WHERE rowid = ' + id);
             }
           )
 
@@ -135,7 +142,7 @@ Rectangle {
             }
           )
 
-          // preview.displayNum = setDisplay;
+          preview.displayNum = displayNum;
           this.parent.parent.parent.destroy();
           mainColumnLayout.visible = true;
         }

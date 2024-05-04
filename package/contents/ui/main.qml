@@ -14,52 +14,63 @@ API Docs: https://develop.kde.org/docs/plasma/kwin/api/
 */
 
 PlasmaCore.Dialog {
-  id: mainDialog
+  id: mainDialog;
 
-  location: PlasmaCore.Types.Floating
-  flags: Qt.X11BypassWindowManagerHint | Qt.FramelessWindowHint
-  visible: false
+  location: PlasmaCore.Types.Floating;
+  flags: Qt.X11BypassWindowManagerHint | Qt.FramelessWindowHint;
+  visible: false;
 
-  property bool editMode: false
-  property bool showNumbers: false
-  property double gap: 10
-  property double spacesCount: 0
-  property string database: "ktile"
-  property double lastPressTime: 0
-  property double doublePressDelay: 500
+  property bool editMode: false;
+  property bool showNumbers: false;
+  property double gap: 10;
+  property double spacesCount: 0;
+  property string database: "ktile";
+  property double lastPressTime: 0;
+  property double doublePressDelay: 500;
+  property variant screenList: getScreens();
+
+  function getScreens() {
+    var tmpList = ['Auto Display']
+
+    for (var i = 0; i < Workspace.screens.length; i++) {
+      tmpList.push("Display " + (i + 1))
+    }
+    return tmpList
+  }
 
   function show() {
     var screen = Workspace.clientArea(KWin.FullScreenArea, Workspace.activeScreen, Workspace.currentDesktop);
     mainDialog.visible = true;
     mainDialog.x = screen.x + screen.width/2 - mainDialog.width/2;
     mainDialog.y = screen.y + screen.height/2 - mainDialog.height/2;
-
-    // mainDialog.width = screen.width/2;
-    // mainDialog.height = screen.height/2;
   }
 
   function tileWindow(window, pos) {
 
     if (!window.normalWindow) return;
-    var screen = Workspace.clientArea(KWin.FullScreenArea, Workspace.activeScreen, Workspace.currentDesktop);
+    var screen = null;
     let db = LocalStorage.openDatabaseSync(database, "1.0", "", 1000000);
 
     db.transaction(
       function(tx) {
         const rs = tx.executeSql('SELECT rowid, * FROM spaces2 WHERE rowid = ' + pos);
 
-        let newWidth = ((rs.rows[0].width / 100) * (screen.width - gap)) - gap
-        let newHeight = ((rs.rows[0].height / 100) * (screen.height - gap)) - gap
-        let newX = ((rs.rows[0].x / 100) * (screen.width - gap)) + gap + screen.x
-        let newY = ((rs.rows[0].y / 100) * (screen.height - gap)) + gap + screen.y
-        let getDisplay = rs.rows[0].display
+        let getDisplayNum = rs.rows[0].display
+
+        if(getDisplayNum > -1) {
+          screen = Workspace.clientArea(KWin.FullScreenArea, Workspace.screens[getDisplayNum], Workspace.currentDesktop);
+          Workspace.sendClientToScreen(window, Workspace.screens[getDisplayNum]);
+        } else {
+          screen = Workspace.clientArea(KWin.FullScreenArea, Workspace.activeScreen, Workspace.currentDesktop);
+        }
+
+        let newWidth = ((rs.rows[0].width / 100) * (screen.width - gap)) - gap;
+        let newHeight = ((rs.rows[0].height / 100) * (screen.height - gap)) - gap;
+        let newX = ((rs.rows[0].x / 100) * (screen.width - gap)) + gap + screen.x;
+        let newY = ((rs.rows[0].y / 100) * (screen.height - gap)) + gap + screen.y;
 
         window.setMaximize(false, false);
         window.frameGeometry = Qt.rect(newX, newY, newWidth, newHeight);
-
-        // if(getDisplay !== 0) {
-        //   workspace.sendClientToScreen(window, getDisplay - 1)
-        // }
 
         // experimenting with double tab to move window to second display
         // var currentTime = new Date().getTime();
