@@ -83,6 +83,8 @@ PlasmaCore.Dialog {
         // lastPressTime = currentTime;
       }
     )
+
+    mainDialog.visible = false;
   }
 
   function reDraw(id, width, height, x, y, display) {
@@ -231,10 +233,10 @@ PlasmaCore.Dialog {
         color: "transparent"
 
         ScrollView {
-          id: scrollview1
+          id: scrollview
           anchors.fill: parent
           anchors.margins: 10
-          // anchors.topMargin: 10
+          anchors.bottomMargin: 40
           clip: true
           ScrollBar.vertical.policy: ScrollBar.AlwaysOff
           
