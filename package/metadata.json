@@ -1,23 +1,26 @@
 {
-  "KPackageStructure": "KWin/Script",
   "KPlugin": {
-    "Name": "kTile",
-    "Description": "ktile",
-    "Icon": "preferences-system-windows",
     "Authors": [
       {
-        "Email": "smile@jonbest.ca",
-        "Name": "Jon Best"
+        "Name": "51n7"
       }
     ],
+    "Category": "Utilities",
+    "Description": "Allows you to create desktop regions by grid selection, then lets you quickly snap the window to that position.",
+    "EnabledByDefault": false,
+    "Icon": "preferences-system-windows",
     "Id": "ktile",
+    "License": "GPL-3.0+",
+    "Name": "kTile",
     "ServiceTypes": [
-      "KWin/Script"
+        "KWin/Script"
     ],
-    "Version": "1.0",
-    "Licsense": "GPLv3",
-    "Website": ""
+    "Version": "1.0.0",
+    "Website": "https://github.com/51n7/kTile"
   },
   "X-Plasma-API": "declarativescript",
-  "X-Plasma-MainScript": "ui/main.qml"
+  "X-Plasma-MainScript": "ui/main.qml",
+  "X-Plasma-API-Minimum-Version": "6.0",
+  "KPackageStructure": "KWin/Script",
+  "X-KDE-PluginKeyword": "ktile"
 }
