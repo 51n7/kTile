@@ -35,3 +35,12 @@ Thumbs.db
 # ENV VARS #
 ##########
 .env
+
+# BUILDS #
+##########
+build/
+build-cmake/
+.clangd/
+.cache/
+*.user
+*~
