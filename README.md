@@ -1,83 +1,36 @@
 # kTile
 
-This is a Kwin script that allows you to create a desktop regions by grid selection, then lets you quickly snap the window to that position.
+**Repository:** https://github.com/51n7/kTile
 
-![Screenshot_20221221_115414](https://user-images.githubusercontent.com/2657818/208982895-5da85ebd-4e41-42d2-afb8-50ddb1d2ec0b.png)
+Snap the active window to a custom rectangle on KDE Plasma 6 (KWin script + **System Settings** KCM). Not a replacement window manager; separate from KWin’s built-in tiling.
 
-![Screenshot_20221221_115907](https://user-images.githubusercontent.com/2657818/208982924-7f7a7c0b-17b5-41dc-9a74-7105dc766426.png)
+**Project context for contributors/agents:** see [AGENTS.md](AGENTS.md), including a **Progress** section on recent KCM work (accordion regions, drag reorder, footer, drop marker behavior).
 
-## Installation
+## Status
 
-### **Option 1:**
+The **Window Management → kTile** page supports multiple regions, native shortcut picking per region, collapsible cards, **drag-to-reorder** (with a visible drop line), and **Add Region** in a footer strip above the system Apply/Defaults row. Technical notes and pitfalls for the next change are in [AGENTS.md](AGENTS.md).
 
-- Copy `package` folder to the following directory and rename to `ktile`:
+## Quick install (Fedora / source)
 
-```
-~/.local/share/kwin/scripts/
-```
+1. Install build dependencies (see **PACKAGING.md** or the message from `./install-kcm.sh` if `cmake` is missing).
+2. Run:
 
-- Log out and back in
+   ```bash
+   ./install-kcm.sh
+   ```
 
-### **Option 2:**
+   For `~/.local` installs, the script writes `~/.config/plasma-workspace/env/ktile-paths.sh` automatically.
+   Log out and back in once so System Settings launched from the app menu sees the KCM.
 
-- Go to `System Settings -> Window Management -> KWin Scripts`
-- Click "Install from File..."
-- Select `kTile.kwinscript` from this repo
+3. In **System Settings → Window Management → KWin Scripts**, enable **kTile**.
+4. Configure **Window Management → kTile** and set shortcuts under **Shortcuts** (default: Meta+Shift+1).
 
-### **Enable Script:**
+## Packaging for other users
 
-- Go to `System Settings -> Window Management -> KWin Scripts`
-- Select the kTile script and hit `Apply`:
+See [PACKAGING.md](PACKAGING.md) (Fedora RPM spec under `packaging/fedora/`, COPR notes, why Flatpak is a poor fit).
 
-![Screenshot_20221216_125031](https://user-images.githubusercontent.com/2657818/208177924-d9fe174b-3d93-4901-8663-f51af5411239.png)
+You do not need a remote repository to package locally: create a tarball from the git checkout and build a package from that tarball (documented in `PACKAGING.md`).
 
-## Usage
+## License
 
-By default the script uses `Ctrl + .` to bring up the main window, to change this see the configuration section below.
-In the main window you can click the ➕ button in the top right to add a new region then hover over the new region to see the edit and delete options.
-In edit mode you can then drag select to draw the size/position you want and also set the grid and gap you need.
-Once you're done hit the ✔️ button to save.
-
-## Configuration
-
-Most of the configuration is done through the graphical interface however due to Kwin limitations shortcuts have to be predefined but can be updated in `System Settings -> Shortcuts -> KWin`.
-
-**Note that I've added a visibility button (main window top right) to toggle numbers on each region block to easily connect it with the Kwin shortcuts.**
-
-![Screenshot_20221216_124805](https://user-images.githubusercontent.com/2657818/208177894-e6365378-6ea2-4216-b7c8-e89afb5c7ccd.png)
-
-## Known Issues
-
-If you're using this script on KDE Neon or Kubuntu you will need to install the following package:
-
-### KDE Neon
-
-```
-sudo pkcon install qml-module-qtquick-localstorage
-```
-
-### Kubuntu
-
-```
-sudo apt-get install qml-module-qtquick-localstorage
-```
-
-## Technical Notes
-
-- This application is written 100% in QML.
-- A core part of this script relies on [QML Local Storage](https://doc.qt.io/qt-6/qtquick-localstorage-qmlmodule.html) to allow using custom UI to save settings. I would love to have the settings interated into KDE's configuration window but currently that doesnt seem possible as it only accpets basic form controls through XML.
-
-As this is my first time writing a Kwin script and using QML I realize there is a lot for me to refactor here. Any feedback would be much appreciated by creating a new [issue](https://github.com/jonbestdev/kTile/issues).
-
-### TODO:
-
-- [x] ~~save custom grid size~~
-- [x] ~~bug with sqlite not reindexing table~~
-- [x] ~~allow gap resize~~
-- [ ] close with escape
-- [ ] close by clicking outside window
-- [ ] quick full screen drag selection
-
-## Special Thanks
-
-This would not be possible with out inspiration from [Moom](https://manytricks.com/moom/) and [Exquisite](https://github.com/qewer33/Exquisite), so many many thanks to both of these great apps.
+GPL-2.0-or-later — see [LICENSE](LICENSE).

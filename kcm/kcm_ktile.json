@@ -1,0 +1,25 @@
+{
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "51n7"
+            }
+        ],
+        "BugReportUrl": "https://github.com/51n7/kTile/issues",
+        "Description": "Custom screen regions to snap the active window (kTile KWin script).",
+        "FormFactors": [
+            "desktop",
+            "handset",
+            "tablet"
+        ],
+        "Icon": "preferences-system-windows",
+        "Name": "kTile",
+        "Id": "kcm_ktile",
+        "License": "GPL-2.0+",
+        "Version": "0.1.0",
+        "Website": "https://github.com/51n7/kTile"
+    },
+    "X-KDE-Keywords": "ktiling,tiling,window,snap,region,placement,kwin,script",
+    "X-KDE-System-Settings-Parent-Category": "windowmanagement",
+    "X-KDE-Weight": 55
+}

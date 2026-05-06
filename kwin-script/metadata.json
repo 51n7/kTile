@@ -1,0 +1,26 @@
+{
+    "KPackageStructure": "KWin/Script",
+    "X-KDE-PluginKeyword": "ktile",
+    "X-Plasma-API": "javascript",
+    "X-Plasma-API-Minimum-Version": "6.0",
+    "X-Plasma-MainScript": "contents/code/main.js",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "51n7"
+            }
+        ],
+        "Category": "Utilities",
+        "Description": "Reposition the active window to a custom screen region.",
+        "EnabledByDefault": false,
+        "Icon": "preferences-system-windows",
+        "Id": "org.kde.ktile",
+        "License": "GPL-2.0+",
+        "Name": "kTile",
+        "ServiceTypes": [
+            "KWin/Script"
+        ],
+        "Version": "0.1.0",
+        "Website": "https://github.com/51n7/kTile"
+    }
+}

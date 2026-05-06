@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=kTile session helper
+Comment=D-Bus helper so KWin can open kTile settings (sources plasma-workspace/env when needed)
+Exec=ktile-session-helper
+X-KDE-autostart-phase=1
+OnlyShowIn=KDE;
+NoDisplay=true
