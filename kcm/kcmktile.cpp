@@ -668,7 +668,14 @@ void KcmKTile::save()
 
     // registerShortcut() runs asynchronously after the script loads; applying shortcuts before the
     // actions exist is a no-op and leaves Keyboard Settings unchanged.
-    waitForKTileKWinActionsRegistered(kglobalaccel, m_regions.size(), 8000);
+    const bool actionsReady = waitForKTileKWinActionsRegistered(kglobalaccel, m_regions.size(), 8000);
+    if (!actionsReady) {
+        // Do not proceed with cleanup/rebinding if KWin never exposed the kTile actions
+        // (e.g. script is disabled/not loaded). Keep config saved and leave runtime bindings as-is.
+        qCWarning(KCM_KTILE) << "kTile actions are unavailable after reload; skipping KGlobalAccel cleanup/rebind.";
+        setNeedsSave(false);
+        return;
+    }
 
     QDBusInterface kwinComponent(
         QStringLiteral("org.kde.kglobalaccel"),

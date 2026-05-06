@@ -12,8 +12,7 @@ Summary:        Custom window snap regions for KDE Plasma (KWin script + KCM)
 License:        GPL-2.0-or-later
 URL:            %{forgeurl}
 
-# For local builds from a git checkout:
-#   cd kTile && git archive --format=tar.gz --prefix=ktile-%{version}/ -o ../ktile-%{version}.tar.gz HEAD
+# Source tarball: see PACKAGING.md or ./build.sh (git archive prefix must be ktile-VERSION/).
 Source0:        ktile-%{version}.tar.gz
 
 BuildRequires:  cmake
@@ -27,9 +26,9 @@ BuildRequires:  qt6-qtbase-devel
 BuildRequires:  qt6-qtdeclarative-devel
 
 Requires:       kwin
-Requires:       systemsettings
 # KCM UI: Kirigami + KCMUtils are pulled in by systemsettings on typical installs;
 # add explicit Requires if a minimal spin omits them:
+Requires:       plasma-workspace
 Requires:       kf6-kcmutils
 Requires:       kf6-kirigami
 Requires:       kf6-kdeclarative
@@ -49,14 +48,17 @@ KWin's built-in tiling.
 
 %install
 %cmake_install
+# KCM installs to QT_INSTALL_PLUGINS/plasma/kcms/systemsettings when installing
+# into /usr with distro Qt (ECM KDE_INSTALL_USE_QT_SYS_PATHS), not plain LIBDIR/plugins.
 
 %files
 %license LICENSE
 %{_bindir}/ktile-session-helper
-%{_datadir}/autostart/ktile-session-helper.desktop
+%{_sysconfdir}/xdg/autostart/ktile-session-helper.desktop
+%{_datadir}/applications/kcm_ktile.desktop
 %{_datadir}/kwin/scripts/org.kde.ktile/
-%{_libdir}/qt6/plugins/kf6/kcm/lib*kcm_ktile.so
+%{_libdir}/qt6/plugins/plasma/kcms/systemsettings/kcm_ktile.so
 
 %changelog
-* Thu Apr 24 2026 kTile upstream 0.1.0-1
+* Tue May 05 2026 kTile upstream <packaging@ktile.local> - 0.1.0-1
 - Initial package

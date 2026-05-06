@@ -14,7 +14,6 @@
         ],
         "Icon": "preferences-system-windows",
         "Name": "kTile",
-        "Id": "kcm_ktile",
         "License": "GPL-2.0+",
         "Version": "0.1.0",
         "Website": "https://github.com/51n7/kTile"
