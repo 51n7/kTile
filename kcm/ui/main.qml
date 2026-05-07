@@ -52,6 +52,7 @@ KCMUtils.SimpleKCM {
     readonly property int accentLineStroke: 2
     readonly property int selectionBorderStroke: 1
     readonly property color accentLineColor: Kirigami.Theme.highlightColor
+    readonly property int regionListMaxWidth: Kirigami.Units.gridUnit * 52
 
     function normalizeShortcutText(sequence) {
         let s = String(sequence || "").trim()
@@ -219,9 +220,15 @@ KCMUtils.SimpleKCM {
                         visible: ktileTabBar.currentIndex === 0
                         spacing: Kirigami.Units.largeSpacing
 
+                Item {
+                    id: regionListContainer
+                    Layout.fillWidth: true
+                    implicitHeight: regionColumn.implicitHeight
+
                 Column {
                     id: regionColumn
-                    Layout.fillWidth: true
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: Math.min(parent.width, ktileRoot.regionListMaxWidth)
                     // Inter-row space lives inside each delegate (rowLeadingGap) so the drop line can sit
                     // centered between cards; Column.spacing above the old strip made the gap above the line huge.
                     spacing: 0
@@ -460,6 +467,8 @@ KCMUtils.SimpleKCM {
                         }
                     }
                 }
+                }
+
                     }
 
                     ColumnLayout {
