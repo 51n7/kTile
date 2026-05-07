@@ -40,12 +40,76 @@ function normalizeArea(area) {
     }
     const x = Number(area.x);
     const y = Number(area.y);
-    const w = Number(area.width);
-    const h = Number(area.height);
+    const wRaw = area.width != null ? area.width : area.w;
+    const hRaw = area.height != null ? area.height : area.h;
+    const w = Number(wRaw);
+    const h = Number(hRaw);
     if (![x, y, w, h].every(function (n) { return isFinite(n); }) || w <= 0 || h <= 0) {
         return null;
     }
     return { x: x, y: y, w: w, h: h };
+}
+
+/** Output (monitor) the window is on; matches legacy tileWindow activeScreen intent. */
+function outputForWindow(wnd) {
+    if (!wnd) {
+        return null;
+    }
+    try {
+        if (wnd.output) {
+            return wnd.output;
+        }
+    } catch (e) {
+        // Fall through.
+    }
+    try {
+        if (workspace.activeScreen) {
+            return workspace.activeScreen;
+        }
+    } catch (e) {
+        // Fall through.
+    }
+    return null;
+}
+
+/**
+ * Prefer workspace.clientArea(option, output, desktop). KDE documents this overload
+ * as the one to use; clientArea(option, window) can return wrong geometry on some
+ * setups (e.g. a narrow usable strip while height looks correct).
+ */
+function readClientAreaForWindow(option, wnd) {
+    const out = outputForWindow(wnd);
+    let desktop = null;
+    try {
+        desktop = workspace.currentDesktop;
+    } catch (e) {
+        desktop = null;
+    }
+    if (out && desktop) {
+        try {
+            if (typeof workspace.currentDesktopForScreen === "function") {
+                const d = workspace.currentDesktopForScreen(out);
+                if (d) {
+                    desktop = d;
+                }
+            }
+        } catch (e) {
+            // Keep workspace.currentDesktop.
+        }
+        try {
+            const area = normalizeArea(workspace.clientArea(option, out, desktop));
+            if (area) {
+                return area;
+            }
+        } catch (e) {
+            // Fall through to window overload.
+        }
+    }
+    try {
+        return normalizeArea(workspace.clientArea(option, wnd));
+    } catch (e) {
+        return null;
+    }
 }
 
 function readWorkAreaForWindow(wnd) {
@@ -58,29 +122,22 @@ function readWorkAreaForWindow(wnd) {
         candidates.push(KWin.FullScreenArea);
     }
     for (let i = 0; i < candidates.length; ++i) {
-        try {
-            const area = normalizeArea(workspace.clientArea(candidates[i], wnd));
-            if (area) {
-                return area;
-            }
-        } catch (e) {
-            // Try next API variant/area type.
+        const area = readClientAreaForWindow(candidates[i], wnd);
+        if (area) {
+            return area;
         }
     }
     return null;
 }
 
-/** Match legacy kTile tileWindow(): FullScreenArea for the window's screen. */
+/** Match legacy kTile tileWindow(): FullScreenArea for the window's output. */
 function readLegacyFullScreenAreaForWindow(wnd) {
-    try {
-        if (typeof KWin !== "undefined") {
-            const area = normalizeArea(workspace.clientArea(KWin.FullScreenArea, wnd));
-            if (area) {
-                return area;
-            }
-        }
-    } catch (e) {
-        // Fall through.
+    if (typeof KWin === "undefined") {
+        return readWorkAreaForWindow(wnd);
+    }
+    const area = readClientAreaForWindow(KWin.FullScreenArea, wnd);
+    if (area) {
+        return area;
     }
     return readWorkAreaForWindow(wnd);
 }
