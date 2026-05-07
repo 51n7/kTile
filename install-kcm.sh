@@ -61,6 +61,13 @@ echo
 echo "Installed KWin script under: $PREFIX/share/kwin/scripts/org.kde.ktile/"
 echo "Enable it in: System Settings → Window Management → KWin Scripts → kTile"
 echo
+if [[ "$PREFIX" != /usr* ]]; then
+  echo "If you later install kTile from an RPM (or any prefix under /usr), remove this user"
+  echo "copy or KWin will usually keep loading it instead of the package:"
+  echo "  rm -rf $PREFIX/share/kwin/scripts/org.kde.ktile"
+  echo "Then reload the script (kTile KCM → Apply) or log out."
+  echo
+fi
 echo "Reload the KWin script after edits (otherwise KWin keeps the old main.js in memory):"
 echo "  Easiest: open kTile in System Settings and click Apply."
 echo "  Or use qdbus (many Fedora installs do not ship qdbus6):"

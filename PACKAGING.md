@@ -63,6 +63,8 @@ sudo apt install cmake build-essential extra-cmake-modules \
 
 After installation, open **System Settings**, enable **kTile** under **KWin Scripts**, and configure regions under **Window Management → kTile**.
 
+**RPM vs `./install-kcm.sh`:** a previous install under `~/.local/share/kwin/scripts/org.kde.ktile/` is usually picked **before** `/usr/share/...`, so KWin can keep running an old `main.js` while the KCM comes from the RPM. Remove the user copy if you switched to the package: `rm -rf ~/.local/share/kwin/scripts/org.kde.ktile`, then Apply in the kTile KCM or log out. Run `./scripts/diagnose-ktile-install.sh` to see which file exists.
+
 ## COPR / Flathub
 
 - **COPR**: point a COPR recipe at this repo and use the same spec (or a `rpkg`/`tito` workflow). Users then run `dnf copr enable …` and `dnf install ktile`.

@@ -36,6 +36,15 @@ namespace
 {
 Q_LOGGING_CATEGORY(KCM_KTILE, "kcm.ktile", QtWarningMsg)
 
+static constexpr int kFallbackMaxDisplayIndex = 3; // Display 1..4 in KWin → 0..3
+
+static int clampedDisplayIndex(int raw)
+{
+    const int n = QGuiApplication::screens().size();
+    const int maxIdx = n > 0 ? qMax(0, n - 1) : kFallbackMaxDisplayIndex;
+    return std::clamp(raw, -1, maxIdx);
+}
+
 static const QString kKWinConfigFile{QStringLiteral("kwinrc")};
 static const QString kGlobalShortcutsFile{QStringLiteral("kglobalshortcutsrc")};
 // Must match KWin::AbstractScript::config() in:
@@ -214,7 +223,8 @@ void KcmKTile::updateRepresentsDefaults()
         return;
     }
     const RegionEntry &first = m_regions.at(0);
-    setRepresentsDefaults(first.region == defaultRegionForIndex(1) && first.shortcut == defaultShortcutForIndex(1));
+    setRepresentsDefaults(first.region == defaultRegionForIndex(1) && first.shortcut == defaultShortcutForIndex(1)
+                          && first.display == -1);
 }
 
 KcmKTile::KcmKTile(QObject *parent, const KPluginMetaData &data)
@@ -301,6 +311,28 @@ QRect KcmKTile::virtualGeometry() const
     return u;
 }
 
+QStringList KcmKTile::screenChoices() const
+{
+    QStringList out;
+    out << QStringLiteral("Auto (active window’s display)");
+    const QList<QScreen *> screens = QGuiApplication::screens();
+    if (!screens.isEmpty()) {
+        out.reserve(1 + screens.size());
+        for (int i = 0; i < screens.size(); ++i) {
+            QScreen *s = screens.at(i);
+            out << QStringLiteral("Display %1 — %2").arg(i + 1).arg(s->name());
+        }
+        return out;
+    }
+    // System Settings may run with zero QScreen instances (offscreen/embedded).
+    // KWin still has outputs; offer numbered entries matching workspace.screens order.
+    out.reserve(1 + kFallbackMaxDisplayIndex + 1);
+    for (int i = 0; i <= kFallbackMaxDisplayIndex; ++i) {
+        out << QStringLiteral("Display %1").arg(i + 1);
+    }
+    return out;
+}
+
 QString KcmKTile::openSettingsShortcut() const
 {
     return m_openSettingsShortcut;
@@ -356,6 +388,7 @@ QVariantList KcmKTile::regions() const
         row.insert(QStringLiteral("number"), i + 1);
         row.insert(QStringLiteral("region"), entry.region);
         row.insert(QStringLiteral("shortcut"), entry.shortcut);
+        row.insert(QStringLiteral("display"), entry.display);
         out.push_back(row);
     }
     return out;
@@ -367,7 +400,7 @@ void KcmKTile::addRegion()
         return;
     }
     const int oneBased = m_regions.size() + 1;
-    m_regions.push_back({defaultRegionForIndex(oneBased), defaultShortcutForIndex(oneBased)});
+    m_regions.push_back({defaultRegionForIndex(oneBased), defaultShortcutForIndex(oneBased), -1});
     emitRegionsChanged();
     setNeedsSave(true);
     updateRepresentsDefaults();
@@ -433,6 +466,21 @@ void KcmKTile::setShortcutValue(int index, const QString &value)
     updateRepresentsDefaults();
 }
 
+void KcmKTile::setDisplayValue(int index, int value)
+{
+    if (index < 0 || index >= m_regions.size()) {
+        return;
+    }
+    const int v = clampedDisplayIndex(value);
+    if (m_regions[index].display == v) {
+        return;
+    }
+    m_regions[index].display = v;
+    emitRegionsChanged();
+    setNeedsSave(true);
+    updateRepresentsDefaults();
+}
+
 QString KcmKTile::exportSettingsJson() const
 {
     QJsonObject root;
@@ -448,6 +496,7 @@ QString KcmKTile::exportSettingsJson() const
         QJsonObject o;
         o.insert(QStringLiteral("region"), e.region);
         o.insert(QStringLiteral("shortcut"), normalizeShortcutSequence(e.shortcut));
+        o.insert(QStringLiteral("display"), e.display);
         regionsArr.append(o);
     }
     root.insert(QStringLiteral("regions"), regionsArr);
@@ -520,6 +569,7 @@ QString KcmKTile::importSettingsFromJson(const QString &json)
         RegionEntry entry;
         entry.region = regionStr;
         entry.shortcut = normalizeShortcutSequence(o.value(QLatin1String("shortcut")).toString());
+        entry.display = clampedDisplayIndex(o.value(QLatin1String("display")).toInt(-1));
         newRegions.push_back(entry);
     }
 
@@ -624,6 +674,7 @@ void KcmKTile::load()
             shortcutsRepaired = true;
         }
         entry.shortcut = shortcut;
+        entry.display = clampedDisplayIndex(g.readEntry(QStringLiteral("display%1").arg(i), -1));
         m_regions.push_back(entry);
     }
 
@@ -658,10 +709,12 @@ void KcmKTile::save()
         const int oneBased = i + 1;
         g.writeEntry(QStringLiteral("region%1").arg(oneBased), m_regions.at(i).region);
         g.writeEntry(QStringLiteral("shortcut%1").arg(oneBased), normalizeShortcutSequence(m_regions.at(i).shortcut));
+        g.writeEntry(QStringLiteral("display%1").arg(oneBased), m_regions.at(i).display);
     }
     for (int i = m_regions.size() + 1; i <= kMaxRegions; ++i) {
         g.deleteEntry(QStringLiteral("region%1").arg(i));
         g.deleteEntry(QStringLiteral("shortcut%1").arg(i));
+        g.deleteEntry(QStringLiteral("display%1").arg(i));
     }
     cfg->sync();
 
@@ -779,7 +832,7 @@ void KcmKTile::defaults()
     m_gridGap = kDefaultGridGap;
     m_openSettingsShortcut.clear();
     m_regions.clear();
-    m_regions.push_back({defaultRegionForIndex(1), defaultShortcutForIndex(1)});
+    m_regions.push_back({defaultRegionForIndex(1), defaultShortcutForIndex(1), -1});
     emitRegionsChanged();
     Q_EMIT gridLayoutChanged();
     Q_EMIT openSettingsShortcutChanged();

@@ -19,6 +19,7 @@ class KcmKTile : public KQuickConfigModule
     Q_PROPERTY(int gridRows READ gridRows WRITE setGridRows NOTIFY gridLayoutChanged)
     Q_PROPERTY(int gridGap READ gridGap WRITE setGridGap NOTIFY gridLayoutChanged)
     Q_PROPERTY(QRect virtualGeometry READ virtualGeometry NOTIFY virtualGeometryChanged)
+    Q_PROPERTY(QStringList screenChoices READ screenChoices NOTIFY virtualGeometryChanged)
     Q_PROPERTY(QString openSettingsShortcut READ openSettingsShortcut WRITE setOpenSettingsShortcut NOTIFY openSettingsShortcutChanged)
 
 public:
@@ -30,6 +31,7 @@ public:
     Q_INVOKABLE void moveRegion(int fromIndex, int toIndex);
     Q_INVOKABLE void setRegionValue(int index, const QString &value);
     Q_INVOKABLE void setShortcutValue(int index, const QString &value);
+    Q_INVOKABLE void setDisplayValue(int index, int value);
 
     int gridColumns() const;
     void setGridColumns(int value);
@@ -38,6 +40,7 @@ public:
     int gridGap() const;
     void setGridGap(int value);
     QRect virtualGeometry() const;
+    QStringList screenChoices() const;
 
     QString openSettingsShortcut() const;
     void setOpenSettingsShortcut(const QString &value);
@@ -61,6 +64,7 @@ private:
     struct RegionEntry {
         QString region;
         QString shortcut;
+        int display = -1; // -1 = auto (window's screen); else QGuiApplication::screens() index
     };
 
 private Q_SLOTS:

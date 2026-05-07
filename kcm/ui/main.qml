@@ -410,6 +410,41 @@ KCMUtils.SimpleKCM {
                                         }
                                     }
 
+                                    RowLayout {
+                                        Layout.fillWidth: true
+                                        // Always show when expanded: screenChoices is at least "Auto", and when
+                                        // System Settings reports no QScreen* we still add Display 1..4 fallbacks.
+                                        visible: regionItem.expanded && kcm
+                                        spacing: Kirigami.Units.smallSpacing
+
+                                        QQC2.Label {
+                                            Layout.alignment: Qt.AlignVCenter
+                                            text: "Display"
+                                        }
+
+                                        Item {
+                                            Layout.fillWidth: true
+                                            Layout.minimumWidth: Kirigami.Units.gridUnit
+                                        }
+
+                                        QQC2.ComboBox {
+                                            Layout.preferredWidth: Math.min(Kirigami.Units.gridUnit * 18, regionCard.width * 0.55)
+                                            Layout.maximumWidth: Kirigami.Units.gridUnit * 22
+                                            model: kcm ? kcm.screenChoices : []
+                                            currentIndex: {
+                                                if (!kcm || count < 1) {
+                                                    return 0
+                                                }
+                                                return Math.min(Math.max(0, modelData.display + 1), count - 1)
+                                            }
+                                            onActivated: function (index) {
+                                                if (kcm) {
+                                                    kcm.setDisplayValue(modelData.index, index - 1)
+                                                }
+                                            }
+                                        }
+                                    }
+
                                     RegionGridEditor {
                                         Layout.fillWidth: true
                                         visible: regionItem.expanded

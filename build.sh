@@ -46,7 +46,6 @@ warn_spec_version() {
 }
 
 build_rpm() {
-    need_cmd git
     need_cmd rpmbuild
     warn_spec_version
     local top="${RPMBUILD_TOP:-$HOME/rpmbuild}"
@@ -58,7 +57,16 @@ build_rpm() {
     }
     local tarball="${top}/SOURCES/ktile-${VERSION}.tar.gz"
     echo "Writing source tarball: ${tarball}"
-    git -C "$ROOT" archive --format=tar.gz --prefix="ktile-${VERSION}/" -o "$tarball" HEAD
+    (
+        cd "$ROOT"
+        tar -czf "$tarball" \
+            --exclude-vcs \
+            --exclude='./build-cmake' \
+            --exclude='./rpmbuild' \
+            --exclude='./.cursor' \
+            --transform "s|^\\./|ktile-${VERSION}/|" \
+            .
+    )
     cp -f "$spec_src" "${top}/SPECS/ktile.spec"
     echo "Running: rpmbuild --define \"_topdir ${top}\" -ba …"
     rpmbuild --define "_topdir ${top}" -ba "${top}/SPECS/ktile.spec"
@@ -91,13 +99,21 @@ build_deb() {
 }
 
 build_arch() {
-    need_cmd git
     need_cmd makepkg
     local work pkgbuild tarball sum
     work="$(mktemp -d "${TMPDIR:-/tmp}/ktile-makepkg.XXXXXX")"
     tarball="${work}/ktile-${VERSION}.tar.gz"
     echo "Creating ${tarball}"
-    git -C "$ROOT" archive --format=tar.gz --prefix="ktile-${VERSION}/" -o "$tarball" HEAD
+    (
+        cd "$ROOT"
+        tar -czf "$tarball" \
+            --exclude-vcs \
+            --exclude='./build-cmake' \
+            --exclude='./rpmbuild' \
+            --exclude='./.cursor' \
+            --transform "s|^\\./|ktile-${VERSION}/|" \
+            .
+    )
     cp "${ROOT}/packaging/arch/PKGBUILD" "${work}/"
     pkgbuild="${work}/PKGBUILD"
     sed -i "s/^pkgver=.*/pkgver=${VERSION}/" "$pkgbuild"
