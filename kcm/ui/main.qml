@@ -388,58 +388,47 @@ KCMUtils.SimpleKCM {
                                             }
                                         }
 
-                                        Item {
+                                        RowLayout {
                                             Layout.alignment: Qt.AlignVCenter
-                                            implicitWidth: regionShortcut.implicitWidth
-                                            implicitHeight: regionShortcut.implicitHeight
+                                            spacing: Kirigami.Units.smallSpacing
 
-                                            KeySequenceItem {
-                                                id: regionShortcut
-                                                anchors.fill: parent
-                                                keySequence: modelData.shortcut
-                                                patterns: ShortcutPattern.Modifier | ShortcutPattern.ModifierAndKey
-                                                onKeySequenceModified: {
-                                                    const normalized = ktileRoot.normalizeShortcutText(keySequence)
-                                                    if (normalized.length > 0) {
-                                                        kcm.setShortcutValue(modelData.index, normalized)
-                                                    } else {
-                                                        kcm.setShortcutValue(modelData.index, "")
+                                            QQC2.ComboBox {
+                                                Layout.alignment: Qt.AlignVCenter
+                                                Layout.preferredWidth: implicitWidth
+                                                Layout.maximumWidth: Kirigami.Units.gridUnit * 14
+                                                Layout.minimumWidth: Kirigami.Units.gridUnit * 7
+                                                model: kcm ? kcm.screenChoices : []
+                                                currentIndex: {
+                                                    if (!kcm || count < 1) {
+                                                        return 0
+                                                    }
+                                                    return Math.min(Math.max(0, modelData.display + 1), count - 1)
+                                                }
+                                                onActivated: function (index) {
+                                                    if (kcm) {
+                                                        kcm.setDisplayValue(modelData.index, index - 1)
                                                     }
                                                 }
                                             }
-                                        }
-                                    }
 
-                                    RowLayout {
-                                        Layout.fillWidth: true
-                                        // Always show when expanded: screenChoices is at least "Auto", and when
-                                        // System Settings reports no QScreen* we still add Display 1..4 fallbacks.
-                                        visible: regionItem.expanded && kcm
-                                        spacing: Kirigami.Units.smallSpacing
+                                            Item {
+                                                Layout.alignment: Qt.AlignVCenter
+                                                implicitWidth: regionShortcut.implicitWidth
+                                                implicitHeight: regionShortcut.implicitHeight
 
-                                        QQC2.Label {
-                                            Layout.alignment: Qt.AlignVCenter
-                                            text: "Display"
-                                        }
-
-                                        Item {
-                                            Layout.fillWidth: true
-                                            Layout.minimumWidth: Kirigami.Units.gridUnit
-                                        }
-
-                                        QQC2.ComboBox {
-                                            Layout.preferredWidth: Math.min(Kirigami.Units.gridUnit * 18, regionCard.width * 0.55)
-                                            Layout.maximumWidth: Kirigami.Units.gridUnit * 22
-                                            model: kcm ? kcm.screenChoices : []
-                                            currentIndex: {
-                                                if (!kcm || count < 1) {
-                                                    return 0
-                                                }
-                                                return Math.min(Math.max(0, modelData.display + 1), count - 1)
-                                            }
-                                            onActivated: function (index) {
-                                                if (kcm) {
-                                                    kcm.setDisplayValue(modelData.index, index - 1)
+                                                KeySequenceItem {
+                                                    id: regionShortcut
+                                                    anchors.fill: parent
+                                                    keySequence: modelData.shortcut
+                                                    patterns: ShortcutPattern.Modifier | ShortcutPattern.ModifierAndKey
+                                                    onKeySequenceModified: {
+                                                        const normalized = ktileRoot.normalizeShortcutText(keySequence)
+                                                        if (normalized.length > 0) {
+                                                            kcm.setShortcutValue(modelData.index, normalized)
+                                                        } else {
+                                                            kcm.setShortcutValue(modelData.index, "")
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }

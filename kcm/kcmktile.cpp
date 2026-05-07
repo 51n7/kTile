@@ -314,13 +314,12 @@ QRect KcmKTile::virtualGeometry() const
 QStringList KcmKTile::screenChoices() const
 {
     QStringList out;
-    out << QStringLiteral("Auto (active window’s display)");
+    out << QStringLiteral("Auto");
     const QList<QScreen *> screens = QGuiApplication::screens();
     if (!screens.isEmpty()) {
         out.reserve(1 + screens.size());
         for (int i = 0; i < screens.size(); ++i) {
-            QScreen *s = screens.at(i);
-            out << QStringLiteral("Display %1 — %2").arg(i + 1).arg(s->name());
+            out << QStringLiteral("Display %1").arg(i + 1);
         }
         return out;
     }

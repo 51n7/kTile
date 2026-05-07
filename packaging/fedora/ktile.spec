@@ -6,7 +6,7 @@
 
 Name:           ktile
 Version:        0.1.0
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        Custom window snap regions for KDE Plasma (KWin script + KCM)
 
 License:        GPL-2.0-or-later
@@ -60,6 +60,9 @@ KWin's built-in tiling.
 %{_libdir}/qt6/plugins/plasma/kcms/systemsettings/kcm_ktile.so
 
 %changelog
+* Thu May 07 2026 kTile upstream <packaging@ktile.local> - 0.1.0-3
+- KCM: move per-region display selector inline into region header actions row
+
 * Wed May 07 2026 kTile upstream <packaging@ktile.local> - 0.1.0-2
 - KCM: show Display row when System Settings has no QScreen*; fallback display list
 
