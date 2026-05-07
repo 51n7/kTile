@@ -72,10 +72,32 @@ function outputForWindow(wnd) {
     return null;
 }
 
+function outputGeometryNormalized(out) {
+    if (!out) {
+        return null;
+    }
+    try {
+        return normalizeArea(out.geometry);
+    } catch (e) {
+        return null;
+    }
+}
+
+/** KDE-preferred overload: clientArea(option, output, currentDesktop). */
+function readClientAreaOnOutput(option, out, desktop) {
+    try {
+        if (!out || !desktop) {
+            return null;
+        }
+        return normalizeArea(workspace.clientArea(option, out, desktop));
+    } catch (e) {
+        return null;
+    }
+}
+
 /**
- * Prefer workspace.clientArea(option, output, desktop). KDE documents this overload
- * as the one to use; clientArea(option, window) can return wrong geometry on some
- * setups (e.g. a narrow usable strip while height looks correct).
+ * Prefer workspace.clientArea(option, output, desktop). Fall back to
+ * clientArea(option, window) only if needed (can be wrong on some setups).
  */
 function readClientAreaForWindow(option, wnd) {
     const out = outputForWindow(wnd);
@@ -85,31 +107,69 @@ function readClientAreaForWindow(option, wnd) {
     } catch (e) {
         desktop = null;
     }
-    if (out && desktop) {
-        try {
-            if (typeof workspace.currentDesktopForScreen === "function") {
-                const d = workspace.currentDesktopForScreen(out);
-                if (d) {
-                    desktop = d;
-                }
-            }
-        } catch (e) {
-            // Keep workspace.currentDesktop.
-        }
-        try {
-            const area = normalizeArea(workspace.clientArea(option, out, desktop));
-            if (area) {
-                return area;
-            }
-        } catch (e) {
-            // Fall through to window overload.
-        }
+    let a = readClientAreaOnOutput(option, out, desktop);
+    if (a) {
+        return a;
     }
     try {
         return normalizeArea(workspace.clientArea(option, wnd));
     } catch (e) {
         return null;
     }
+}
+
+/**
+ * 100% reference for percent tiling: usable client area intersected with the
+ * physical output. clientArea(..., output, desktop) can return a width spanning
+ * multiple monitors on some configs — then 50% matches one full monitor.
+ * clientArea(option, window) can return a narrow strip — widen via MaximizeArea.
+ */
+function percentBasisRectForWindow(wnd) {
+    const out = outputForWindow(wnd);
+    const geom = outputGeometryNormalized(out);
+    let desktop = null;
+    try {
+        desktop = workspace.currentDesktop;
+    } catch (e) {
+        desktop = null;
+    }
+    const order = [];
+    if (typeof KWin !== "undefined") {
+        order.push(KWin.MaximizeArea);
+        order.push(KWin.FullScreenArea);
+        order.push(KWin.PlacementArea);
+        order.push(KWin.WorkArea);
+    }
+    for (let i = 0; i < order.length; ++i) {
+        const opt = order[i];
+        let a = readClientAreaOnOutput(opt, out, desktop);
+        if (!a) {
+            a = readClientAreaForWindow(opt, wnd);
+        }
+        if (!a) {
+            continue;
+        }
+        if (geom) {
+            const capped = intersectRect(a, geom);
+            if (capped && capped.w >= 32 && capped.h >= 32) {
+                a = capped;
+            }
+        }
+        if (geom && a.w < geom.w * 0.33 && a.h > geom.h * 0.65) {
+            let m = readClientAreaOnOutput(KWin.MaximizeArea, out, desktop);
+            if (!m) {
+                m = readClientAreaForWindow(KWin.MaximizeArea, wnd);
+            }
+            if (m && geom) {
+                const c2 = intersectRect(m, geom);
+                if (c2 && c2.w > a.w && c2.w >= geom.w * 0.4) {
+                    a = c2;
+                }
+            }
+        }
+        return a;
+    }
+    return geom;
 }
 
 function readWorkAreaForWindow(wnd) {
@@ -130,14 +190,11 @@ function readWorkAreaForWindow(wnd) {
     return null;
 }
 
-/** Match legacy kTile tileWindow(): FullScreenArea for the window's output. */
+/** Basis rect for legacy-style percent tiling (see percentBasisRectForWindow). */
 function readLegacyFullScreenAreaForWindow(wnd) {
-    if (typeof KWin === "undefined") {
-        return readWorkAreaForWindow(wnd);
-    }
-    const area = readClientAreaForWindow(KWin.FullScreenArea, wnd);
-    if (area) {
-        return area;
+    const b = percentBasisRectForWindow(wnd);
+    if (b) {
+        return b;
     }
     return readWorkAreaForWindow(wnd);
 }
