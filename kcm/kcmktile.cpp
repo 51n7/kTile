@@ -575,11 +575,23 @@ void KcmKTile::load()
         std::clamp(g.readEntry(QStringLiteral("gridRows"), kDefaultGridRows), kGridSpanMin, kGridSpanMax);
     m_gridGap = std::clamp(g.readEntry(QStringLiteral("gridGap"), kDefaultGridGap), 0, kGridGapMax);
 
+    // KWin's script only reads shortcuts from kwinrc (readConfig). Keyboard Shortcuts edits
+    // kglobalshortcutsrc. If those diverge, the UI shows the global binding but registerShortcut
+    // still uses the stale kwinrc value until Apply — or forever if the user never Apply'd from
+    // this KCM. Persist merged shortcuts back to kwinrc and reload the script when we repair.
+    bool shortcutsRepaired = false;
+
     const QString openActionName = QStringLiteral("kTile: Open settings");
-    QString openShortcut = normalizeShortcutSequence(g.readEntry(QStringLiteral("openSettingsShortcut"), QString()));
+    const QString storedOpenShortcut =
+        normalizeShortcutSequence(g.readEntry(QStringLiteral("openSettingsShortcut"), QString()));
+    QString openShortcut = storedOpenShortcut;
     if (kwinShortcuts.hasKey(openActionName)) {
         const QString serialized = kwinShortcuts.readEntry(openActionName, QString());
         openShortcut = normalizeShortcutSequence(activeShortcutFromSerializedGlobalEntry(serialized));
+    }
+    if (openShortcut != storedOpenShortcut) {
+        g.writeEntry(QStringLiteral("openSettingsShortcut"), openShortcut);
+        shortcutsRepaired = true;
     }
     m_openSettingsShortcut = openShortcut;
 
@@ -589,15 +601,27 @@ void KcmKTile::load()
         RegionEntry entry;
         entry.region = g.readEntry(QStringLiteral("region%1").arg(i), defaultRegionForIndex(i));
         const QString actionName = QStringLiteral("kTile: region %1").arg(i);
-        QString shortcut = normalizeShortcutSequence(
+        const QString storedShortcut = normalizeShortcutSequence(
             g.readEntry(QStringLiteral("shortcut%1").arg(i), defaultShortcutForIndex(i)));
+        QString shortcut = storedShortcut;
         if (kwinShortcuts.hasKey(actionName)) {
             const QString serialized = kwinShortcuts.readEntry(actionName, QString());
             shortcut = normalizeShortcutSequence(activeShortcutFromSerializedGlobalEntry(serialized));
         }
+        if (shortcut != storedShortcut) {
+            g.writeEntry(QStringLiteral("shortcut%1").arg(i), shortcut);
+            shortcutsRepaired = true;
+        }
         entry.shortcut = shortcut;
         m_regions.push_back(entry);
     }
+
+    if (shortcutsRepaired) {
+        cfg->sync();
+        reconfigureKWin();
+        reloadKWinScript();
+    }
+
     emitRegionsChanged();
     Q_EMIT gridLayoutChanged();
     Q_EMIT virtualGeometryChanged();
