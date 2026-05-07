@@ -184,7 +184,8 @@ QString activeShortcutFromSerializedGlobalEntry(const QString &entry)
 QString KcmKTile::defaultRegionForIndex(int oneBasedIndex)
 {
     Q_UNUSED(oneBasedIndex)
-    return QStringLiteral("100 100 960 540");
+    // Percentages of the active window's display (see kwin-script coordinate mode).
+    return QStringLiteral("0 0 50 50");
 }
 
 QString KcmKTile::defaultShortcutForIndex(int oneBasedIndex)

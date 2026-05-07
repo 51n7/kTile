@@ -1,13 +1,19 @@
 /*
    kTile — KWin script
-   Snaps the active window to a rectangle (x y width height) from script config.
-   Default shortcut: read from kwinrc (key shortcut1); you can also change the
-   binding under System Settings → Shortcuts (search for “kTile”).
+   Positions the active window using regions from script config.
+
+   coordinateMode=percent (default): regionN is "x% y% w% h%" (0–100, decimals OK),
+   relative to the active window's screen — same idea as legacy kTile (declarative)
+   tileWindow(): percentages of Workspace.clientArea(FullScreenArea, …).
+
+   coordinateMode=absolute: regionN is global pixel x y width height (legacy KCM).
+
+   Default shortcut: read from kwinrc (shortcutN); see System Settings → Shortcuts.
 */
 "use strict";
 
 /**
- * @param {string} spec Whitespace-separated x y width height in global/workspace pixels
+ * @param {string} spec Whitespace-separated four numbers
  * @returns {{ok: boolean, x?: number, y?: number, w?: number, h?: number, err?: string}}
  */
 function parseRect(spec) {
@@ -62,6 +68,41 @@ function readWorkAreaForWindow(wnd) {
         }
     }
     return null;
+}
+
+/** Match legacy kTile tileWindow(): FullScreenArea for the window's screen. */
+function readLegacyFullScreenAreaForWindow(wnd) {
+    try {
+        if (typeof KWin !== "undefined") {
+            const area = normalizeArea(workspace.clientArea(KWin.FullScreenArea, wnd));
+            if (area) {
+                return area;
+            }
+        }
+    } catch (e) {
+        // Fall through.
+    }
+    return readWorkAreaForWindow(wnd);
+}
+
+/** Per-region: legacy pixel rects use values > 100; KCM "percent" mode stays ≤ 100. */
+function snapModeForConfig(configKey, defaultSpec) {
+    const force = String(readConfig("coordinateMode", "") || "").trim().toLowerCase();
+    if (force === "absolute") {
+        return "absolute";
+    }
+    if (force === "percent") {
+        return "percent";
+    }
+    const spec = readConfig(configKey, defaultSpec);
+    const r = parseRect(spec);
+    if (!r.ok) {
+        return "percent";
+    }
+    if (r.x > 100 || r.y > 100 || r.w > 100 || r.h > 100) {
+        return "absolute";
+    }
+    return "percent";
 }
 
 function intersectRect(a, b) {
@@ -142,7 +183,62 @@ function applyGapToClippedRect(rect, wa, gap) {
     return { x: x, y: y, w: w, h: h };
 }
 
-function snapActiveToRectFromConfig(configKey, defaultSpec) {
+function applyFrameGeometry(wnd, x, y, width, height) {
+    if (wnd.fullScreen) {
+        wnd.fullScreen = false;
+    }
+    if (typeof wnd.setMaximize === "function") {
+        wnd.setMaximize(false, false);
+    }
+    wnd.frameGeometry = {
+        x: x,
+        y: y,
+        width: width,
+        height: height
+    };
+}
+
+/**
+ * Percentages (0–100) of the active window's FullScreenArea, using the same
+ * math as legacy ui/main.qml tileWindow() with gap.
+ */
+function snapActivePercentFromConfig(configKey, defaultSpec) {
+    const wnd = workspace.activeWindow;
+    if (!wnd) {
+        return;
+    }
+    if (!wnd.normalWindow) {
+        return;
+    }
+    const spec = readConfig(configKey, defaultSpec);
+    const r = parseRect(spec);
+    if (!r.ok) {
+        print("kTile:", r.err, "raw:", spec);
+        return;
+    }
+    const xPct = r.x;
+    const yPct = r.y;
+    const wPct = r.w;
+    const hPct = r.h;
+    const screen = readLegacyFullScreenAreaForWindow(wnd);
+    if (!screen) {
+        print("kTile: no screen area for window;", configKey);
+        return;
+    }
+    const G = Math.max(0, Number(readConfig("gridGap", 0)) || 0);
+    const newW = (wPct / 100) * (screen.w - G) - G;
+    const newH = (hPct / 100) * (screen.h - G) - G;
+    const newX = (xPct / 100) * (screen.w - G) + G + screen.x;
+    const newY = (yPct / 100) * (screen.h - G) + G + screen.y;
+    if (newW < 1 || newH < 1) {
+        print("kTile: computed size too small;", configKey, newW, newH);
+        return;
+    }
+    applyFrameGeometry(wnd, newX, newY, newW, newH);
+}
+
+/** Legacy global-pixel regions (clip + optional clamp to work area). */
+function snapActiveAbsoluteFromConfig(configKey, defaultSpec) {
     const wnd = workspace.activeWindow;
     if (!wnd) {
         return;
@@ -172,25 +268,20 @@ function snapActiveToRectFromConfig(configKey, defaultSpec) {
         print("kTile: region too small after applying gap", configKey, configuredGap);
         return;
     }
-    // Some windows ignore frameGeometry while maximized/fullscreen.
-    if (wnd.fullScreen) {
-        wnd.fullScreen = false;
-    }
-    if (typeof wnd.setMaximize === "function") {
-        wnd.setMaximize(false, false);
-    }
+    applyFrameGeometry(wnd, withGap.x, withGap.y, withGap.w, withGap.h);
+}
 
-    // Avoid relying on Qt.rect availability in scripting context.
-    wnd.frameGeometry = {
-        x: withGap.x,
-        y: withGap.y,
-        width: withGap.w,
-        height: withGap.h
-    };
+function snapActiveToRectFromConfig(configKey, defaultSpec) {
+    if (snapModeForConfig(configKey, defaultSpec) === "percent") {
+        snapActivePercentFromConfig(configKey, defaultSpec);
+    } else {
+        snapActiveAbsoluteFromConfig(configKey, defaultSpec);
+    }
 }
 
 function defaultRegionForIndex(oneBasedIndex) {
-    return "100 100 960 540";
+    void oneBasedIndex;
+    return "0 0 50 50";
 }
 
 function defaultShortcutForIndex(oneBasedIndex) {

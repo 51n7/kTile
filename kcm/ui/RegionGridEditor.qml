@@ -4,9 +4,10 @@ import QtQuick.Controls as QQC2
 import org.kde.kirigami as Kirigami
 
 /**
- * Maps the virtual desktop rectangle (kcm.virtualGeometry) onto a cols×rows grid.
- * Drag to select a rectangle; the region is saved as "x y width height" in global pixels
- * (same as the KWin script).
+ * Maps an abstract cols×rows grid to a saved region string "x y w h".
+ * Values are percentages (0–100) of the active window's display at tile time
+ * (same model as legacy declarative kTile tileWindow). Legacy configs still use
+ * global pixel rects (any component > 100); those are shown using virtualGeometry.
  */
 Item {
     id: root
@@ -65,42 +66,39 @@ Item {
         const a1 = Math.max(gx0, gx1)
         const b0 = Math.min(gy0, gy1)
         const b1 = Math.max(gy0, gy1)
-        const g = vg
-        if (!kcm || g.width <= 0 || g.height <= 0) {
+        if (!kcm) {
             return
         }
-        const bx = boundaries(g.x, g.width, cols)
-        const by = boundaries(g.y, g.height, rows)
-        const x0 = bx[a0]
-        const y0 = by[b0]
-        const x1 = bx[a1 + 1]
-        const y1 = by[b1 + 1]
-        const w = Math.max(1, x1 - x0)
-        const h = Math.max(1, y1 - y0)
-        const x = x0
-        const y = y0
-        // Keep the visual selection in sync immediately; model update follows.
+        const xPct = (a0 / cols) * 100
+        const yPct = (b0 / rows) * 100
+        const wPct = ((a1 - a0 + 1) / cols) * 100
+        const hPct = ((b1 - b0 + 1) / rows) * 100
         hasSelection = true
         placeBox(selectionRect, a0, b0, a1, b1)
-        kcm.setRegionValue(regionIndex, x + " " + y + " " + w + " " + h)
+        kcm.setRegionValue(regionIndex, xPct + " " + yPct + " " + wPct + " " + hPct)
     }
 
-    function applyRegionString(spec) {
-        const parts = String(spec).trim().split(/\s+/)
-        if (parts.length < 4) {
+    function applyPercentRegionString(xPct, yPct, wPct, hPct) {
+        const gx0 = Math.min(cols - 1, Math.max(0, Math.floor(xPct / 100 * cols + 1e-9)))
+        const gx1 = Math.min(cols - 1, Math.max(0, Math.ceil((xPct + wPct) / 100 * cols - 1e-9) - 1))
+        const gy0 = Math.min(rows - 1, Math.max(0, Math.floor(yPct / 100 * rows + 1e-9)))
+        const gy1 = Math.min(rows - 1, Math.max(0, Math.ceil((yPct + hPct) / 100 * rows - 1e-9) - 1))
+        if (gx1 < gx0 || gy1 < gy0) {
             hasSelection = false
             return
         }
-        const x = Number(parts[0])
-        const y = Number(parts[1])
-        const w = Number(parts[2])
-        const h = Number(parts[3])
-        if (![x, y, w, h].every((n) => isFinite(n)) || w <= 0 || h <= 0) {
-            hasSelection = false
-            return
-        }
+        selGX0 = gx0
+        selGY0 = gy0
+        selGX1 = gx1
+        selGY1 = gy1
+        hasSelection = true
+        placeBox(selectionRect, gx0, gy0, gx1, gy1)
+    }
+
+    function applyAbsoluteRegionString(x, y, w, h) {
         const g = vg
         if (g.width <= 0 || g.height <= 0) {
+            hasSelection = false
             return
         }
         const bx = boundaries(g.x, g.width, cols)
@@ -133,20 +131,41 @@ Item {
             hasSelection = false
             return
         }
-        gx0 = Math.max(0, Math.min(cols - 1, gx0))
-        gy0 = Math.max(0, Math.min(rows - 1, gy0))
-        gx1 = Math.max(0, Math.min(cols - 1, gx1))
-        gy1 = Math.max(0, Math.min(rows - 1, gy1))
-        if (gx1 < gx0 || gy1 < gy0) {
+        const ngx0 = Math.max(0, Math.min(cols - 1, gx0))
+        const ngy0 = Math.max(0, Math.min(rows - 1, gy0))
+        const ngx1 = Math.max(0, Math.min(cols - 1, gx1))
+        const ngy1 = Math.max(0, Math.min(rows - 1, gy1))
+        if (ngx1 < ngx0 || ngy1 < ngy0) {
             hasSelection = false
             return
         }
-        selGX0 = gx0
-        selGY0 = gy0
-        selGX1 = gx1
-        selGY1 = gy1
+        selGX0 = ngx0
+        selGY0 = ngy0
+        selGX1 = ngx1
+        selGY1 = ngy1
         hasSelection = true
-        placeBox(selectionRect, gx0, gy0, gx1, gy1)
+        placeBox(selectionRect, ngx0, ngy0, ngx1, ngy1)
+    }
+
+    function applyRegionString(spec) {
+        const parts = String(spec).trim().split(/\s+/)
+        if (parts.length < 4) {
+            hasSelection = false
+            return
+        }
+        const x = Number(parts[0])
+        const y = Number(parts[1])
+        const w = Number(parts[2])
+        const h = Number(parts[3])
+        if (![x, y, w, h].every((n) => isFinite(n)) || w <= 0 || h <= 0) {
+            hasSelection = false
+            return
+        }
+        if (x > 100 || y > 100 || w > 100 || h > 100) {
+            applyAbsoluteRegionString(x, y, w, h)
+        } else {
+            applyPercentRegionString(x, y, w, h)
+        }
     }
 
     function placeBox(box, gx0, gy0, gx1, gy1) {
