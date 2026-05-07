@@ -645,6 +645,10 @@ void KcmKTile::save()
 {
     KSharedConfig::Ptr cfg = KSharedConfig::openConfig(kKWinConfigFile);
     KConfigGroup g(cfg, kScriptConfigGroup);
+    // The current KCM edits regions as percentages of the active display.
+    // Persist this explicitly so stale legacy "absolute" mode does not
+    // reinterpret grid selections as pixel coordinates.
+    g.writeEntry(QStringLiteral("coordinateMode"), QStringLiteral("percent"));
     g.writeEntry(QStringLiteral("regionCount"), m_regions.size());
     g.writeEntry(QStringLiteral("gridColumns"), m_gridColumns);
     g.writeEntry(QStringLiteral("gridRows"), m_gridRows);

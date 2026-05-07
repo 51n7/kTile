@@ -202,18 +202,27 @@ function readLegacyFullScreenAreaForWindow(wnd) {
 /** Per-region: legacy pixel rects use values > 100; KCM "percent" mode stays ≤ 100. */
 function snapModeForConfig(configKey, defaultSpec) {
     const force = String(readConfig("coordinateMode", "") || "").trim().toLowerCase();
+    const spec = readConfig(configKey, defaultSpec);
+    const r = parseRect(spec);
+    const looksAbsolute = r.ok && (r.x > 100 || r.y > 100 || r.w > 100 || r.h > 100);
+    const looksPercent = r.ok && !looksAbsolute;
+
     if (force === "absolute") {
+        // Compatibility: old configs may still force absolute while regionN now stores
+        // grid percentages from the KCM. Keep absolute only when the region itself
+        // clearly looks like pixels.
+        if (looksPercent) {
+            return "percent";
+        }
         return "absolute";
     }
     if (force === "percent") {
         return "percent";
     }
-    const spec = readConfig(configKey, defaultSpec);
-    const r = parseRect(spec);
     if (!r.ok) {
         return "percent";
     }
-    if (r.x > 100 || r.y > 100 || r.w > 100 || r.h > 100) {
+    if (looksAbsolute) {
         return "absolute";
     }
     return "percent";
