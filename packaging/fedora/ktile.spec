@@ -6,7 +6,7 @@
 
 Name:           ktile
 Version:        0.1.0
-Release:        3%{?dist}
+Release:        8%{?dist}
 Summary:        Custom window snap regions for KDE Plasma (KWin script + KCM)
 
 License:        GPL-2.0-or-later
@@ -55,11 +55,27 @@ KWin's built-in tiling.
 %license LICENSE
 %{_bindir}/ktile-session-helper
 %{_sysconfdir}/xdg/autostart/ktile-session-helper.desktop
+%{_datadir}/dbus-1/services/org.kde.ktile.service
 %{_datadir}/applications/kcm_ktile.desktop
 %{_datadir}/kwin/scripts/org.kde.ktile/
 %{_libdir}/qt6/plugins/plasma/kcms/systemsettings/kcm_ktile.so
 
 %changelog
+* Thu May 07 2026 kTile upstream <packaging@ktile.local> - 0.1.0-8
+- session-helper: add runtime log at ~/.cache/ktile-session-helper.log for DBus/open diagnostics
+
+* Thu May 07 2026 kTile upstream <packaging@ktile.local> - 0.1.0-7
+- session-helper: launch KCM with environment inherited from running Plasma/KWin session processes
+
+* Thu May 07 2026 kTile upstream <packaging@ktile.local> - 0.1.0-6
+- session-helper: resolve kcmshell6/systemsettings via absolute paths and fallback launcher
+
+* Thu May 07 2026 kTile upstream <packaging@ktile.local> - 0.1.0-5
+- session-helper: switch to QCoreApplication to avoid GUI/display init failures on DBus activation
+
+* Thu May 07 2026 kTile upstream <packaging@ktile.local> - 0.1.0-4
+- Add DBus activation for org.kde.ktile so Open settings shortcut works without relogin
+
 * Thu May 07 2026 kTile upstream <packaging@ktile.local> - 0.1.0-3
 - KCM: move per-region display selector inline into region header actions row
 
