@@ -393,6 +393,7 @@ KCMUtils.SimpleKCM {
                                             spacing: Kirigami.Units.smallSpacing
 
                                             QQC2.ComboBox {
+                                                visible: kcm && kcm.displaySelectorVisible
                                                 Layout.alignment: Qt.AlignVCenter
                                                 Layout.preferredWidth: implicitWidth
                                                 Layout.maximumWidth: Kirigami.Units.gridUnit * 14

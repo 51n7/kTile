@@ -332,6 +332,11 @@ QStringList KcmKTile::screenChoices() const
     return out;
 }
 
+bool KcmKTile::displaySelectorVisible() const
+{
+    return QGuiApplication::screens().size() > 1;
+}
+
 QString KcmKTile::openSettingsShortcut() const
 {
     return m_openSettingsShortcut;

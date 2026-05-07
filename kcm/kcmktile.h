@@ -20,6 +20,7 @@ class KcmKTile : public KQuickConfigModule
     Q_PROPERTY(int gridGap READ gridGap WRITE setGridGap NOTIFY gridLayoutChanged)
     Q_PROPERTY(QRect virtualGeometry READ virtualGeometry NOTIFY virtualGeometryChanged)
     Q_PROPERTY(QStringList screenChoices READ screenChoices NOTIFY virtualGeometryChanged)
+    Q_PROPERTY(bool displaySelectorVisible READ displaySelectorVisible NOTIFY virtualGeometryChanged)
     Q_PROPERTY(QString openSettingsShortcut READ openSettingsShortcut WRITE setOpenSettingsShortcut NOTIFY openSettingsShortcutChanged)
 
 public:
@@ -41,6 +42,7 @@ public:
     void setGridGap(int value);
     QRect virtualGeometry() const;
     QStringList screenChoices() const;
+    bool displaySelectorVisible() const;
 
     QString openSettingsShortcut() const;
     void setOpenSettingsShortcut(const QString &value);
