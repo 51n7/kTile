@@ -76,6 +76,34 @@ function intersectRect(a, b) {
 }
 
 /**
+ * Intersect target with the active window's work area. If there is no overlap
+ * (common with multi-monitor: region pixels are entirely on another screen),
+ * shift and optionally shrink the rectangle so it fits inside the work area while
+ * keeping the same intent on *this* display (top-left region → top-left of current
+ * screen, etc.).
+ */
+function intersectRectOrClampToWorkArea(target, wa) {
+    if (!wa) {
+        return target;
+    }
+    let clipped = intersectRect(target, wa);
+    if (clipped) {
+        return clipped;
+    }
+    const w = Math.min(target.w, wa.w);
+    const h = Math.min(target.h, wa.h);
+    if (w < 1 || h < 1) {
+        return null;
+    }
+    let x = target.x;
+    let y = target.y;
+    x = Math.max(wa.x, Math.min(x, wa.x + wa.w - w));
+    y = Math.max(wa.y, Math.min(y, wa.y + wa.h - h));
+    clipped = intersectRect({ x: x, y: y, w: w, h: h }, wa);
+    return clipped;
+}
+
+/**
  * Apply gridGap: full gap at work-area edges, half gap on interior edges so two
  * adjacent regions share one full gap; matches margin-to-screen to gap-between-windows.
  */
@@ -131,7 +159,7 @@ function snapActiveToRectFromConfig(configKey, defaultSpec) {
     let target = { x: r.x, y: r.y, w: r.w, h: r.h };
     const workArea = readWorkAreaForWindow(wnd);
     if (workArea) {
-        const clipped = intersectRect(target, workArea);
+        const clipped = intersectRectOrClampToWorkArea(target, workArea);
         if (!clipped) {
             print("kTile: region outside work area; skipping", configKey);
             return;

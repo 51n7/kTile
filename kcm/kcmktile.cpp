@@ -284,10 +284,20 @@ void KcmKTile::setGridGap(int value)
 
 QRect KcmKTile::virtualGeometry() const
 {
-    if (const QScreen *screen = QGuiApplication::primaryScreen()) {
-        return screen->virtualGeometry();
+    // Use the union of every screen's geometry in virtual-desktop coordinates.
+    // primaryScreen()->virtualGeometry() can disagree with this on some Wayland /
+    // mixed-DPI setups; the grid must match the same coordinate space KWin uses for
+    // frameGeometry (full desktop), especially with a monitor to the left (negative
+    // or split origins).
+    const QList<QScreen *> screens = QGuiApplication::screens();
+    if (screens.isEmpty()) {
+        return QRect(0, 0, 1920, 1080);
     }
-    return QRect(0, 0, 1920, 1080);
+    QRect u = screens.constFirst()->geometry();
+    for (int i = 1; i < screens.size(); ++i) {
+        u = u.united(screens.at(i)->geometry());
+    }
+    return u;
 }
 
 QString KcmKTile::openSettingsShortcut() const
