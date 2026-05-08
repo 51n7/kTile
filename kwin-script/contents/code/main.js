@@ -790,6 +790,23 @@ function openKTileSettingsViaDBus() {
     );
 }
 
+function moveActiveWindowToNextScreen() {
+    const wnd = workspace.activeWindow;
+    if (!wnd) {
+        return;
+    }
+    if (!wnd.normalWindow) {
+        return;
+    }
+    try {
+        if (typeof workspace.slotWindowToNextScreen === "function") {
+            workspace.slotWindowToNextScreen();
+        }
+    } catch (e) {
+        print("kTile: slotWindowToNextScreen failed:", e);
+    }
+}
+
 {
     const configured = readConfig("openSettingsShortcut", "");
     const shortcut = normalizeShortcut(configured);
@@ -803,5 +820,19 @@ function openKTileSettingsViaDBus() {
     );
     if (!ok) {
         print("kTile: failed to register Open settings shortcut, value:", shortcut);
+    }
+}
+
+{
+    const configured = readConfig("moveToNextScreenShortcut", "");
+    const shortcut = normalizeShortcut(configured);
+    const ok = registerShortcut(
+        "kTile: Move window to next screen",
+        "kTile: Move window to next screen",
+        shortcut,
+        moveActiveWindowToNextScreen
+    );
+    if (!ok) {
+        print("kTile: failed to register Move window to next screen shortcut, value:", shortcut);
     }
 }

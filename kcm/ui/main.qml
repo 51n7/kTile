@@ -511,6 +511,35 @@ KCMUtils.SimpleKCM {
                         RowLayout {
                             Layout.fillWidth: true
                             spacing: Kirigami.Units.smallSpacing
+                            visible: kcm && kcm.displaySelectorVisible
+
+                            QQC2.Label {
+                                Layout.alignment: Qt.AlignVCenter
+                                text: "Move window to next screen"
+                            }
+
+                            Item {
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: Kirigami.Units.gridUnit * 2
+                            }
+
+                            KeySequenceItem {
+                                Layout.alignment: Qt.AlignVCenter
+                                keySequence: kcm ? kcm.moveToNextScreenShortcut : ""
+                                patterns: ShortcutPattern.Modifier | ShortcutPattern.ModifierAndKey
+                                onKeySequenceModified: {
+                                    if (!kcm) {
+                                        return
+                                    }
+                                    const normalized = ktileRoot.normalizeShortcutText(keySequence)
+                                    kcm.moveToNextScreenShortcut = normalized.length > 0 ? normalized : ""
+                                }
+                            }
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: Kirigami.Units.smallSpacing
 
                             QQC2.Label {
                                 Layout.alignment: Qt.AlignVCenter

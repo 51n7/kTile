@@ -143,6 +143,9 @@ bool waitForKTileKWinActionsRegistered(QDBusInterface &kglobalaccel, int regionC
                 }
             }
             bool ok = names.contains(QLatin1String("kTile: Open settings"));
+            if (ok) {
+                ok = names.contains(QLatin1String("kTile: Move window to next screen"));
+            }
             for (int i = 1; i <= regionCount && ok; ++i) {
                 if (!names.contains(QStringLiteral("kTile: region %1").arg(i))) {
                     ok = false;
@@ -172,6 +175,8 @@ QString activeShortcutFromSerializedGlobalEntry(const QString &entry)
     rest.remove(ktileDescSuffix);
     static const QRegularExpression ktileOpenSuffix(QStringLiteral(R"(,kTile: Open settings\s*$)"));
     rest.remove(ktileOpenSuffix);
+    static const QRegularExpression ktileMoveNextSuffix(QStringLiteral(R"(,kTile: Move window to next screen\s*$)"));
+    rest.remove(ktileMoveNextSuffix);
 
     const int lastComma = rest.lastIndexOf(QLatin1Char(','));
     QString active = (lastComma > 0) ? rest.left(lastComma) : rest;
@@ -219,6 +224,10 @@ void KcmKTile::updateRepresentsDefaults()
         return;
     }
     if (!m_openSettingsShortcut.isEmpty()) {
+        setRepresentsDefaults(false);
+        return;
+    }
+    if (!m_moveToNextScreenShortcut.isEmpty()) {
         setRepresentsDefaults(false);
         return;
     }
@@ -350,6 +359,23 @@ void KcmKTile::setOpenSettingsShortcut(const QString &value)
     }
     m_openSettingsShortcut = normalized;
     Q_EMIT openSettingsShortcutChanged();
+    setNeedsSave(true);
+    updateRepresentsDefaults();
+}
+
+QString KcmKTile::moveToNextScreenShortcut() const
+{
+    return m_moveToNextScreenShortcut;
+}
+
+void KcmKTile::setMoveToNextScreenShortcut(const QString &value)
+{
+    const QString normalized = normalizeShortcutSequence(value);
+    if (m_moveToNextScreenShortcut == normalized) {
+        return;
+    }
+    m_moveToNextScreenShortcut = normalized;
+    Q_EMIT moveToNextScreenShortcutChanged();
     setNeedsSave(true);
     updateRepresentsDefaults();
 }
@@ -494,6 +520,7 @@ QString KcmKTile::exportSettingsJson() const
     root.insert(QStringLiteral("gridRows"), m_gridRows);
     root.insert(QStringLiteral("gridGap"), m_gridGap);
     root.insert(QStringLiteral("openSettingsShortcut"), normalizeShortcutSequence(m_openSettingsShortcut));
+    root.insert(QStringLiteral("moveToNextScreenShortcut"), normalizeShortcutSequence(m_moveToNextScreenShortcut));
 
     QJsonArray regionsArr;
     for (const RegionEntry &e : m_regions) {
@@ -583,11 +610,14 @@ QString KcmKTile::importSettingsFromJson(const QString &json)
         std::clamp(root.value(QLatin1String("gridRows")).toInt(kDefaultGridRows), kGridSpanMin, kGridSpanMax);
     m_gridGap = std::clamp(root.value(QLatin1String("gridGap")).toInt(kDefaultGridGap), 0, kGridGapMax);
     m_openSettingsShortcut = normalizeShortcutSequence(root.value(QLatin1String("openSettingsShortcut")).toString());
+    m_moveToNextScreenShortcut =
+        normalizeShortcutSequence(root.value(QLatin1String("moveToNextScreenShortcut")).toString());
     m_regions = std::move(newRegions);
 
     emitRegionsChanged();
     Q_EMIT gridLayoutChanged();
     Q_EMIT openSettingsShortcutChanged();
+    Q_EMIT moveToNextScreenShortcutChanged();
     updateRepresentsDefaults();
 
     save();
@@ -660,6 +690,20 @@ void KcmKTile::load()
     }
     m_openSettingsShortcut = openShortcut;
 
+    const QString nextScreenActionName = QStringLiteral("kTile: Move window to next screen");
+    const QString storedNextShortcut =
+        normalizeShortcutSequence(g.readEntry(QStringLiteral("moveToNextScreenShortcut"), QString()));
+    QString nextShortcut = storedNextShortcut;
+    if (kwinShortcuts.hasKey(nextScreenActionName)) {
+        const QString serialized = kwinShortcuts.readEntry(nextScreenActionName, QString());
+        nextShortcut = normalizeShortcutSequence(activeShortcutFromSerializedGlobalEntry(serialized));
+    }
+    if (nextShortcut != storedNextShortcut) {
+        g.writeEntry(QStringLiteral("moveToNextScreenShortcut"), nextShortcut);
+        shortcutsRepaired = true;
+    }
+    m_moveToNextScreenShortcut = nextShortcut;
+
     m_regions.clear();
     m_regions.reserve(count);
     for (int i = 1; i <= count; ++i) {
@@ -692,6 +736,7 @@ void KcmKTile::load()
     Q_EMIT gridLayoutChanged();
     Q_EMIT virtualGeometryChanged();
     Q_EMIT openSettingsShortcutChanged();
+    Q_EMIT moveToNextScreenShortcutChanged();
     updateRepresentsDefaults();
     setNeedsSave(false);
 }
@@ -709,6 +754,7 @@ void KcmKTile::save()
     g.writeEntry(QStringLiteral("gridRows"), m_gridRows);
     g.writeEntry(QStringLiteral("gridGap"), m_gridGap);
     g.writeEntry(QStringLiteral("openSettingsShortcut"), normalizeShortcutSequence(m_openSettingsShortcut));
+    g.writeEntry(QStringLiteral("moveToNextScreenShortcut"), normalizeShortcutSequence(m_moveToNextScreenShortcut));
     for (int i = 0; i < m_regions.size(); ++i) {
         const int oneBased = i + 1;
         g.writeEntry(QStringLiteral("region%1").arg(oneBased), m_regions.at(i).region);
@@ -730,6 +776,7 @@ void KcmKTile::save()
         kwinShortcuts.deleteEntry(QStringLiteral("kTile: region %1").arg(i));
     }
     kwinShortcuts.deleteEntry(QStringLiteral("kTile: Open settings"));
+    kwinShortcuts.deleteEntry(QStringLiteral("kTile: Move window to next screen"));
     shortcutsCfg->sync();
 
     // Force runtime re-registration for all kTile region actions so updates to
@@ -751,7 +798,8 @@ void KcmKTile::save()
                 }
                 const QString actionName = actionId.at(1);
                 const QRegularExpressionMatch m = regionActionRe.match(actionName);
-                if (!m.hasMatch() && actionName != QLatin1String("kTile: Open settings")) {
+                if (!m.hasMatch() && actionName != QLatin1String("kTile: Open settings")
+                    && actionName != QLatin1String("kTile: Move window to next screen")) {
                     continue;
                 }
                 kglobalaccel.call(QStringLiteral("unRegister"), actionId);
@@ -821,6 +869,19 @@ void KcmKTile::save()
                         QStringLiteral("setForeignShortcut"),
                         QVariant::fromValue(actionId),
                         QVariant::fromValue(keys));
+                    continue;
+                }
+                if (actionName == QLatin1String("kTile: Move window to next screen")) {
+                    const QList<int> keys = keysListFromShortcutString(m_moveToNextScreenShortcut);
+                    if (keys.isEmpty() && !m_moveToNextScreenShortcut.isEmpty()) {
+                        qCWarning(KCM_KTILE) << "Could not convert shortcut to key codes for" << actionName
+                                             << "text:" << m_moveToNextScreenShortcut;
+                    }
+                    kglobalaccel.call(
+                        QStringLiteral("setForeignShortcut"),
+                        QVariant::fromValue(actionId),
+                        QVariant::fromValue(keys));
+                    continue;
                 }
             }
         }
@@ -835,11 +896,13 @@ void KcmKTile::defaults()
     m_gridRows = kDefaultGridRows;
     m_gridGap = kDefaultGridGap;
     m_openSettingsShortcut.clear();
+    m_moveToNextScreenShortcut.clear();
     m_regions.clear();
     m_regions.push_back({defaultRegionForIndex(1), defaultShortcutForIndex(1), -1});
     emitRegionsChanged();
     Q_EMIT gridLayoutChanged();
     Q_EMIT openSettingsShortcutChanged();
+    Q_EMIT moveToNextScreenShortcutChanged();
     setNeedsSave(true);
     updateRepresentsDefaults();
 }
@@ -852,7 +915,8 @@ void KcmKTile::onGlobalShortcutChanged(const QStringList &actionId, const QList<
     }
     const QString actionName = actionId.at(1);
     static const QRegularExpression regionActionRe(QStringLiteral("^kTile: region (\\d+)$"));
-    if (!regionActionRe.match(actionName).hasMatch() && actionName != QLatin1String("kTile: Open settings")) {
+    if (!regionActionRe.match(actionName).hasMatch() && actionName != QLatin1String("kTile: Open settings")
+        && actionName != QLatin1String("kTile: Move window to next screen")) {
         return;
     }
     // Do not overwrite in-progress unsaved edits in this KCM.

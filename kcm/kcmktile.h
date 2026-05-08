@@ -22,6 +22,7 @@ class KcmKTile : public KQuickConfigModule
     Q_PROPERTY(QStringList screenChoices READ screenChoices NOTIFY virtualGeometryChanged)
     Q_PROPERTY(bool displaySelectorVisible READ displaySelectorVisible NOTIFY virtualGeometryChanged)
     Q_PROPERTY(QString openSettingsShortcut READ openSettingsShortcut WRITE setOpenSettingsShortcut NOTIFY openSettingsShortcutChanged)
+    Q_PROPERTY(QString moveToNextScreenShortcut READ moveToNextScreenShortcut WRITE setMoveToNextScreenShortcut NOTIFY moveToNextScreenShortcutChanged)
 
 public:
     KcmKTile(QObject *parent, const KPluginMetaData &data);
@@ -47,6 +48,9 @@ public:
     QString openSettingsShortcut() const;
     void setOpenSettingsShortcut(const QString &value);
 
+    QString moveToNextScreenShortcut() const;
+    void setMoveToNextScreenShortcut(const QString &value);
+
     Q_INVOKABLE QString exportSettingsJson() const;
     Q_INVOKABLE QString exportSettingsToUrl(const QUrl &url) const;
     Q_INVOKABLE QString importSettingsFromJson(const QString &json);
@@ -61,6 +65,7 @@ Q_SIGNALS:
     void gridLayoutChanged();
     void virtualGeometryChanged();
     void openSettingsShortcutChanged();
+    void moveToNextScreenShortcutChanged();
 
 private:
     struct RegionEntry {
@@ -83,6 +88,7 @@ private:
 
     QVector<RegionEntry> m_regions;
     QString m_openSettingsShortcut;
+    QString m_moveToNextScreenShortcut;
     int m_gridColumns = 8;
     int m_gridRows = 6;
     int m_gridGap = 0;
