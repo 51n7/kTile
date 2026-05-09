@@ -1,16 +1,12 @@
 # kTile
 
-**Repository:** https://github.com/51n7/kTile
-
-Snap the active window to a custom rectangle on KDE Plasma 6 (KWin script + **System Settings** KCM). Not a replacement window manager; separate from KWin’s built-in tiling.
-
-**Project context for contributors/agents:** see [AGENTS.md](AGENTS.md), including a **Progress** section on recent KCM work (accordion regions, drag reorder, footer, drop marker behavior).
+Snap the active window to a custom desktop region on KDE Plasma 6 (KWin script + **System Settings** KCM).
 
 ## Status
 
 The **Window Management → kTile** page supports multiple regions, native shortcut picking per region, collapsible cards, **drag-to-reorder** (with a visible drop line), and **Add Region** in a footer strip above the system Apply/Defaults row. Technical notes and pitfalls for the next change are in [AGENTS.md](AGENTS.md).
 
-## Quick install (Fedora / source)
+## Quick install
 
 1. Install build dependencies (see **PACKAGING.md** or the message from `./install-kcm.sh` if `cmake` is missing).
 2. Run:
@@ -19,11 +15,10 @@ The **Window Management → kTile** page supports multiple regions, native short
    ./install-kcm.sh
    ```
 
-   For `~/.local` installs, the script writes `~/.config/plasma-workspace/env/ktile-paths.sh` automatically.
-   Log out and back in once so System Settings launched from the app menu sees the KCM.
+   You might need to log out and back in once so System Settings launched from the app menu sees the kTile (KCM) settings.
 
 3. In **System Settings → Window Management → KWin Scripts**, enable **kTile**.
-4. Configure **Window Management → kTile** and set shortcuts under **Shortcuts** (default: Meta+Shift+1).
+4. Configure in **Window Management → kTile**
 
 ## Packaging for other users
 

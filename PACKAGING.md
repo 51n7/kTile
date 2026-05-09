@@ -7,13 +7,13 @@ kTile has two installable parts, both installed by **one CMake build**:
 
 ## Build dependencies
 
+### Fedora Linux (example)
+
 ```bash
 sudo dnf install cmake gcc-c++ extra-cmake-modules \
   qt6-qtbase-devel qt6-qtdeclarative-devel \
   kf6-kcmutils-devel kf6-kconfig-devel kf6-kcoreaddons-devel kf6-ki18n-devel
 ```
-
-Other distributions: install the **KF6** counterparts (KCMUtils, KConfig, KCoreAddons, KI18n), **Qt 6** Base + Declarative dev packages, **CMake**, and **ECM** (extra-cmake-modules).
 
 ### Arch Linux (example)
 
@@ -29,6 +29,8 @@ sudo apt install cmake build-essential extra-cmake-modules \
   qt6-base-dev qt6-declarative-dev \
   libkf6kcmutils-dev libkf6config-dev libkf6coreaddons-dev libkf6i18n-dev
 ```
+
+Other distributions: install the **KF6** counterparts (KCMUtils, KConfig, KCoreAddons, KI18n), **Qt 6** Base + Declarative dev packages, **CMake**, and **ECM** (extra-cmake-modules).
 
 ## Install from source (single prefix)
 
