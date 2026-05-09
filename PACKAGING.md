@@ -5,7 +5,7 @@ kTile has two installable parts, both installed by **one CMake build**:
 1. **KWin script** → `share/kwin/scripts/org.kde.ktile/` (enable under *Window Management → KWin Scripts*).
 2. **KCM** → Qt plugin `libkcm_ktile.so` under `lib(64)/qt6/plugins/kf6/kcm/` (shows under *Window Management → kTile*).
 
-## Build dependencies
+## Install build dependencies
 
 ### Fedora Linux (example)
 
@@ -32,46 +32,38 @@ sudo apt install cmake build-essential extra-cmake-modules \
 
 Other distributions: install the **KF6** counterparts (KCMUtils, KConfig, KCoreAddons, KI18n), **Qt 6** Base + Declarative dev packages, **CMake**, and **ECM** (extra-cmake-modules).
 
-## Install from source (single prefix)
+## Install from source
 
 ```bash
 ./install-kcm.sh              # ~/.local
 ./install-kcm.sh /usr/local   # system-wide if you have write access
 ```
 
-## Fedora RPM (local `rpmbuild`)
+## Build Distro Package
 
-1. Create a tarball from the repository (adjust path):
+Use the interactive helper (same **Build dependencies** as above, plus your distro’s packaging tools: `rpmbuild`, or `dpkg-buildpackage` + `fakeroot`, or `makepkg`):
 
-   ```bash
-   cd /path/to/kTile
-   git archive --format=tar.gz --prefix=ktile-0.1.0/ -o ~/rpmbuild/SOURCES/ktile-0.1.0.tar.gz HEAD
-   ```
+```bash
+./build.sh
+```
 
-2. Copy `packaging/fedora/ktile.spec` to `~/rpmbuild/SPECS/ktile.spec` and fix `Source0` if you host tarballs elsewhere (the spec’s `URL` points at https://github.com/51n7/kTile).
-   If you do not have a remote repo yet, keep `Source0` as a local tarball name and build from that.
+The script reads the version from `project(kTile VERSION …)` in the top-level `CMakeLists.txt`, then lets you build:
 
-3. Build:
+- **RPM** — writes `ktile-<version>.tar.gz` under `~/rpmbuild/SOURCES` (or `$RPMBUILD_TOP` if set), copies `packaging/fedora/ktile.spec`, and runs `rpmbuild -ba`. Warns if the spec’s `Version:` does not match CMake.
+- **DEB** — runs `fakeroot dpkg-buildpackage -b -us -uc` from the repo root. Warns if `debian/changelog` does not start with `ktile (<version>-…)`.
+- **Arch** — builds in a temp dir with `packaging/arch/PKGBUILD`, refreshes `pkgver` and `sha256sums`, then runs `makepkg -f`. Resulting `*.pkg.tar.zst` are left in that temp directory (the script prints the path).
 
-   ```bash
-   rpmbuild -ba ~/rpmbuild/SPECS/ktile.spec
-   ```
+Override the RPM tree if needed:
 
-4. Install the RPM:
-
-   ```bash
-   sudo dnf install ~/rpmbuild/RPMS/*/ktile-*.rpm
-   ```
-
-After installation, open **System Settings**, enable **kTile** under **KWin Scripts**, and configure regions under **Window Management → kTile**.
-
-**RPM vs `./install-kcm.sh`:** a previous install under `~/.local/share/kwin/scripts/org.kde.ktile/` is usually picked **before** `/usr/share/...`, so KWin can keep running an old `main.js` while the KCM comes from the RPM. Remove the user copy if you switched to the package: `rm -rf ~/.local/share/kwin/scripts/org.kde.ktile`, then Apply in the kTile KCM or log out. Run `./scripts/diagnose-ktile-install.sh` to see which file exists.
-
-## COPR / Flathub
-
-- **COPR**: point a COPR recipe at this repo and use the same spec (or a `rpkg`/`tito` workflow). Users then run `dnf copr enable …` and `dnf install ktile`.
-- **Flatpak**: not a good fit here: the KCM and KWin script must load inside the **session** KWin and **system** System Settings; Flatpak sandboxing breaks that integration. Prefer distro packages or `./install-kcm.sh` into `/usr` or `~/.local`.
+```bash
+RPMBUILD_TOP=/path/to/rpmbuild ./build.sh
+```
 
 ## Version bumps
 
-Update `project(kTile VERSION …)` in the top-level `CMakeLists.txt`, `Version` in `kcm/kcm_ktile.json`, `Version` in `kwin-script/metadata.json`, and `Version` / `Release` in `packaging/fedora/ktile.spec`.
+Modify the version number in:
+
+- Update `project(kTile VERSION ...)` in top-level `CMakeLists.txt`
+- `Version` in `kcm/kcm_ktile.json`
+- `Version` in `kwin-script/metadata.json`
+- `Version` / `Release` in `packaging/fedora/ktile.spec`

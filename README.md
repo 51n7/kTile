@@ -1,10 +1,6 @@
-# kTile
+# kTile 2.0
 
-Snap the active window to a custom desktop region on KDE Plasma 6 (KWin script + **System Settings** KCM).
-
-## Status
-
-The **Window Management → kTile** page supports multiple regions, native shortcut picking per region, collapsible cards, **drag-to-reorder** (with a visible drop line), and **Add Region** in a footer strip above the system Apply/Defaults row. Technical notes and pitfalls for the next change are in [AGENTS.md](AGENTS.md).
+**kTile** is a snap-windows helper for **KDE Plasma 6**. You define rectangular **regions** on your displays (as fractions of the screen) and assign a **keyboard shortcut** to each. While a window is focused, pressing that shortcut moves and resizes the window into the matching region, similar to tiling presets, but driven by your own layout instead of a fixed grid.
 
 ## Quick install
 
@@ -18,13 +14,35 @@ The **Window Management → kTile** page supports multiple regions, native short
    You might need to log out and back in once so System Settings launched from the app menu sees the kTile (KCM) settings.
 
 3. In **System Settings → Window Management → KWin Scripts**, enable **kTile**.
-4. Configure in **Window Management → kTile**
+4. Continue under **Configuration** and **Usage** below.
 
-## Packaging for other users
+## Configuration
 
-See [PACKAGING.md](PACKAGING.md) (Fedora RPM spec under `packaging/fedora/`, COPR notes, why Flatpak is a poor fit).
+Open **System Settings → Window Management → kTile**. There you can:
 
-You do not need a remote repository to package locally: create a tarball from the git checkout and build a package from that tarball (documented in `PACKAGING.md`).
+- Add and remove desktop **regions**
+- Reorder regions (**drag-and-drop**)
+- Edit each **region** on a **grid** (columns, rows, and gap define how the rectangle maps to the active screen)
+- Assign a **shortcut per region** using the standard key-sequence picker
+- Optionally set shortcut for **opening kTile settings**
+
+Click **Apply** (or **OK**) so KWin picks up changes; the script reloads when settings are saved. If shortcuts were edited elsewhere (for example in **Keyboard → Shortcuts**), applying from this page keeps KWin’s script configuration in sync.
+
+## Usage
+
+Focus a normal window and press a region’s shortcut to snap it into that region.
+
+If behavior looks wrong after install or upgrade, enable **kTile** again under **System Settings → Window Management → KWin Scripts**, or sign out and back in once.
+
+## Packaging
+
+See [PACKAGING.md](PACKAGING.md) to build installable packages on your machine (Fedora-style RPM, Debian `.deb`, or Arch), install the packaging tools for your distro, then run:
+
+```bash
+./build.sh
+```
+
+The script is interactive: it picks the package type, creates the source tarball where needed, and runs `rpmbuild`, `dpkg-buildpackage`, or `makepkg`. You do not need a remote repository to package locally (manual tarball + spec steps are also documented in `PACKAGING.md` if you prefer not to use `build.sh`).
 
 ## License
 
