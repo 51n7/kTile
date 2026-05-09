@@ -24,7 +24,7 @@ echo "kTile — local package build"
 echo "Detected project version (CMakeLists.txt): ${VERSION}"
 echo
 echo "  1) RPM   Fedora / RHEL-style (rpmbuild; packaging/fedora/ktile.spec)"
-echo "  2) DEB   Debian / Ubuntu (dpkg-buildpackage; ./debian)"
+echo "  2) DEB   Debian / Ubuntu (dpkg-buildpackage; packaging/debian)"
 echo "  3) Arch   pacman package (makepkg; packaging/arch/PKGBUILD)"
 echo "  q) Quit"
 echo
@@ -77,7 +77,7 @@ build_rpm() {
 
 deb_changelog_matches() {
     local cl
-    cl=$(head -1 "${ROOT}/debian/changelog")
+    cl=$(head -1 "${ROOT}/packaging/debian/changelog")
     [[ "$cl" =~ ^ktile\ \(${VERSION}-[0-9]+\) ]]
 }
 
@@ -87,15 +87,60 @@ build_deb() {
         echo "error: fakeroot not found (e.g. apt install fakeroot)." >&2
         exit 1
     fi
+    # dpkg-buildpackage expects ./debian at the repo root; canonical files live under packaging/debian/.
+    # If a plain directory named debian/ already exists, ln would put a link inside it instead of replacing it.
+    rm -rf "${ROOT}/debian"
+    ln -sfn "${ROOT}/packaging/debian" "${ROOT}/debian"
     if ! deb_changelog_matches; then
-        echo "warning: debian/changelog does not start with ktile (${VERSION}-…) — bump debian/changelog with dch or edit by hand." >&2
+        echo "warning: packaging/debian/changelog does not start with ktile (${VERSION}-…) — bump it with dch or edit by hand." >&2
         read -r -p "Continue anyway? [y/N] " a || true
         [[ "${a:-}" =~ ^[yY]$ ]] || exit 1
     fi
+    if ! (cd "${ROOT}" && dpkg-checkbuilddeps); then
+        cat >&2 <<'EOF'
+error: install Debian build dependencies (see PACKAGING.md “Ubuntu/Debian”), for example:
+  sudo apt install debhelper fakeroot cmake build-essential extra-cmake-modules \
+    qt6-base-dev qt6-declarative-dev \
+    libkf6kcmutils-dev libkf6config-dev libkf6coreaddons-dev libkf6i18n-dev
+EOF
+        exit 1
+    fi
     echo "Running: fakeroot dpkg-buildpackage -b -us -uc"
-    fakeroot dpkg-buildpackage -b -us -uc
+    (cd "${ROOT}" && fakeroot dpkg-buildpackage -b -us -uc)
     echo
-    echo "Built .deb files are usually in: $(cd "${ROOT}/.." && pwd)/"
+    local parent deb_out
+    parent="$(cd "${ROOT}/.." && pwd)"
+    # dpkg-buildpackage writes outputs next to the repo; move them to ~/debian (override with KTILE_DEB_OUT).
+    deb_out="${KTILE_DEB_OUT:-${HOME}/debian}"
+    mkdir -p "${deb_out}"
+    deb_out="$(cd "${deb_out}" && pwd)"
+    (
+        shopt -s nullglob
+        local artifacts=(
+            "${parent}"/ktile*.deb
+            "${parent}"/ktile*.buildinfo
+            "${parent}"/ktile*.changes
+        )
+        if [[ ${#artifacts[@]} -eq 0 ]]; then
+            echo "warning: no ktile build artifacts in ${parent}/ (build may have failed)." >&2
+        elif [[ "${parent}" != "${deb_out}" ]]; then
+            local f
+            for f in "${artifacts[@]}"; do
+                mv -f "${f}" "${deb_out}/"
+            done
+            echo "Moved Debian build products to: ${deb_out}/"
+            shopt -s nullglob
+            local listed=(
+                "${deb_out}"/ktile*.deb
+                "${deb_out}"/ktile*.buildinfo
+                "${deb_out}"/ktile*.changes
+            )
+            printf '  %s\n' "${listed[@]}"
+        else
+            echo "Debian build products (already under destination):"
+            printf '  %s\n' "${artifacts[@]}"
+        fi
+    )
 }
 
 build_arch() {

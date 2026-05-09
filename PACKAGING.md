@@ -24,8 +24,18 @@ sudo pacman -S --needed cmake extra-cmake-modules base-devel \
 
 ### Ubuntu/Debian (example)
 
+For `./install-kcm.sh` from source:
+
 ```bash
 sudo apt install cmake build-essential extra-cmake-modules \
+  qt6-base-dev qt6-declarative-dev \
+  libkf6kcmutils-dev libkf6config-dev libkf6coreaddons-dev libkf6i18n-dev
+```
+
+To build a `.deb` with `./build.sh`, also install Debian packaging helpers (`debhelper` satisfies `debhelper-compat`; `fakeroot` is required by the script):
+
+```bash
+sudo apt install debhelper fakeroot cmake build-essential extra-cmake-modules \
   qt6-base-dev qt6-declarative-dev \
   libkf6kcmutils-dev libkf6config-dev libkf6coreaddons-dev libkf6i18n-dev
 ```
@@ -50,13 +60,19 @@ Use the interactive helper (same **Build dependencies** as above, plus your dist
 The script reads the version from `project(kTile VERSION …)` in the top-level `CMakeLists.txt`, then lets you build:
 
 - **RPM** — writes `ktile-<version>.tar.gz` under `~/rpmbuild/SOURCES` (or `$RPMBUILD_TOP` if set), copies `packaging/fedora/ktile.spec`, and runs `rpmbuild -ba`. Warns if the spec’s `Version:` does not match CMake.
-- **DEB** — runs `fakeroot dpkg-buildpackage -b -us -uc` from the repo root. Warns if `debian/changelog` does not start with `ktile (<version>-…)`.
+- **DEB** — Debian metadata lives in `packaging/debian/`. The build script symlinks `./debian` there and runs `fakeroot dpkg-buildpackage -b -us -uc`. Build products (`.deb`, `.buildinfo`, `.changes`) are first emitted next to the repo, then **moved to `~/debian/`** (same role as `~/rpmbuild` for RPM). Warns if `packaging/debian/changelog` does not start with `ktile (<version>-…)`. Override the destination with `KTILE_DEB_OUT`.
 - **Arch** — builds in a temp dir with `packaging/arch/PKGBUILD`, refreshes `pkgver` and `sha256sums`, then runs `makepkg -f`. Resulting `*.pkg.tar.zst` are left in that temp directory (the script prints the path).
 
 Override the RPM tree if needed:
 
 ```bash
 RPMBUILD_TOP=/path/to/rpmbuild ./build.sh
+```
+
+Override where Debian build products are placed after the build (default: `~/debian`):
+
+```bash
+KTILE_DEB_OUT=/path/to/out ./build.sh
 ```
 
 ## Version bumps

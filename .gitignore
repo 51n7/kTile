@@ -38,6 +38,11 @@ Thumbs.db
 
 # BUILDS #
 ##########
+# dpkg-buildpackage / dh cmake out-of-tree build dir (triplet varies by arch)
+obj-*/
+# ./build.sh symlinks ./debian → packaging/debian for dpkg-buildpackage
+debian
+packaging/debian/*.deb
 build/
 build-cmake/
 .clangd/
