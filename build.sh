@@ -18,10 +18,28 @@ extract_version() {
     printf '%s' "$v"
 }
 
+extract_packaging_release() {
+    local line f
+    f="${ROOT}/packaging/PACKAGING_RELEASE"
+    if [[ ! -f "$f" ]]; then
+        echo "error: missing ${f} — add a single integer (RPM Release / Debian revision)." >&2
+        exit 1
+    fi
+    line=$(grep -v '^[[:space:]]*#' "$f" | grep -v '^[[:space:]]*$' | head -1 || true)
+    line=$(printf '%s' "$line" | tr -d ' \t\r')
+    if [[ ! "$line" =~ ^[1-9][0-9]*$ ]]; then
+        echo "error: packaging/PACKAGING_RELEASE must contain one positive integer (got '${line}')." >&2
+        exit 1
+    fi
+    printf '%s' "$line"
+}
+
 VERSION="$(extract_version)"
+PKGREL="$(extract_packaging_release)"
 
 echo "kTile — local package build"
-echo "Detected project version (CMakeLists.txt): ${VERSION}"
+echo "Upstream version (CMakeLists.txt): ${VERSION}"
+echo "Packaging iteration (packaging/PACKAGING_RELEASE): ${PKGREL} (RPM Release and Debian package revision)"
 echo
 echo "  1) RPM   Fedora / RHEL-style (rpmbuild; packaging/fedora/ktile.spec)"
 echo "  2) DEB   Debian / Ubuntu (dpkg-buildpackage; packaging/debian)"
@@ -38,10 +56,14 @@ need_cmd() {
 }
 
 warn_spec_version() {
-    local spec_ver
+    local spec_ver spec_packrel
     spec_ver=$(grep -m1 '^Version:' "${ROOT}/packaging/fedora/ktile.spec" | awk '{print $2}')
+    spec_packrel=$(grep -m1 '^%global packrel' "${ROOT}/packaging/fedora/ktile.spec" | awk '{print $3}')
     if [[ -n "$spec_ver" && "$spec_ver" != "$VERSION" ]]; then
         echo "warning: CMake VERSION (${VERSION}) != RPM spec Version (${spec_ver}). Bump the spec before release." >&2
+    fi
+    if [[ -n "$spec_packrel" && "$spec_packrel" != "${PKGREL}" ]]; then
+        echo "warning: packaging/PACKAGING_RELEASE (${PKGREL}) != RPM spec %global packrel (${spec_packrel}). Sync them." >&2
     fi
 }
 
@@ -67,7 +89,7 @@ build_rpm() {
             --transform "s|^\\./|ktile-${VERSION}/|" \
             .
     )
-    cp -f "$spec_src" "${top}/SPECS/ktile.spec"
+    sed -e "s/^%global packrel .*/%global packrel ${PKGREL}/" "$spec_src" >"${top}/SPECS/ktile.spec"
     echo "Running: rpmbuild --define \"_topdir ${top}\" -ba …"
     rpmbuild --define "_topdir ${top}" -ba "${top}/SPECS/ktile.spec"
     echo
@@ -78,7 +100,7 @@ build_rpm() {
 deb_changelog_matches() {
     local cl
     cl=$(head -1 "${ROOT}/packaging/debian/changelog")
-    [[ "$cl" =~ ^ktile\ \(${VERSION}-[0-9]+\) ]]
+    [[ "$cl" =~ ^ktile\ \(${VERSION}-${PKGREL}\) ]]
 }
 
 build_deb() {
@@ -92,7 +114,7 @@ build_deb() {
     rm -rf "${ROOT}/debian"
     ln -sfn "${ROOT}/packaging/debian" "${ROOT}/debian"
     if ! deb_changelog_matches; then
-        echo "warning: packaging/debian/changelog does not start with ktile (${VERSION}-…) — bump it with dch or edit by hand." >&2
+        echo "warning: packaging/debian/changelog does not start with ktile (${VERSION}-${PKGREL}) — bump packaging/PACKAGING_RELEASE and dch, or edit by hand." >&2
         read -r -p "Continue anyway? [y/N] " a || true
         [[ "${a:-}" =~ ^[yY]$ ]] || exit 1
     fi
@@ -162,6 +184,7 @@ build_arch() {
     cp "${ROOT}/packaging/arch/PKGBUILD" "${work}/"
     pkgbuild="${work}/PKGBUILD"
     sed -i "s/^pkgver=.*/pkgver=${VERSION}/" "$pkgbuild"
+    sed -i "s/^pkgrel=.*/pkgrel=${PKGREL}/" "$pkgbuild"
     sum=$(sha256sum "$tarball" | awk '{print $1}')
     sed -i "s/^sha256sums=.*/sha256sums=('${sum}')/" "$pkgbuild"
     cd "$work"

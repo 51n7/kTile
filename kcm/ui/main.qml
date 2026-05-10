@@ -428,7 +428,6 @@ KCMUtils.SimpleKCM {
                                                     id: regionShortcut
                                                     anchors.fill: parent
                                                     keySequence: modelData.shortcut
-                                                    patterns: ShortcutPattern.Modifier | ShortcutPattern.ModifierAndKey
                                                     onKeySequenceModified: {
                                                         const normalized = ktileRoot.normalizeShortcutText(keySequence)
                                                         if (normalized.length > 0) {
@@ -497,7 +496,6 @@ KCMUtils.SimpleKCM {
                             KeySequenceItem {
                                 Layout.alignment: Qt.AlignVCenter
                                 keySequence: kcm ? kcm.openSettingsShortcut : ""
-                                patterns: ShortcutPattern.Modifier | ShortcutPattern.ModifierAndKey
                                 onKeySequenceModified: {
                                     if (!kcm) {
                                         return
@@ -526,7 +524,6 @@ KCMUtils.SimpleKCM {
                             KeySequenceItem {
                                 Layout.alignment: Qt.AlignVCenter
                                 keySequence: kcm ? kcm.moveToNextScreenShortcut : ""
-                                patterns: ShortcutPattern.Modifier | ShortcutPattern.ModifierAndKey
                                 onKeySequenceModified: {
                                     if (!kcm) {
                                         return

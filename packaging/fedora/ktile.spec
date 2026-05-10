@@ -6,7 +6,9 @@
 
 Name:           ktile
 Version:        0.1.0
-Release:        8%{?dist}
+# Packaging iteration — canonical value is packaging/PACKAGING_RELEASE (build.sh substitutes when copying to rpmbuild).
+%global packrel 9
+Release:        %{packrel}%{?dist}
 Summary:        Custom window snap regions for KDE Plasma (KWin script + KCM)
 
 License:        GPL-2.0-or-later

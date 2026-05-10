@@ -67,6 +67,13 @@ if [[ "$PREFIX" != /usr* ]]; then
   echo "  rm -rf $PREFIX/share/kwin/scripts/org.kde.ktile"
   echo "Then reload the script (kTile KCM → Apply) or log out."
   echo
+  echo "Same problem for the System Settings module (KCM): plasma-workspace/env sets QT_PLUGIN_PATH"
+  echo "to prefer $PREFIX, so an old kcm_ktile.so under ~/.local overrides /usr from a .deb/.rpm."
+  echo "Remove the user plugin (and log out, or unset QT_PLUGIN_PATH when testing kcmshell6):"
+  echo "  rm -f $PREFIX/lib/*/qt6/plugins/plasma/kcms/systemsettings/kcm_ktile.so \\"
+  echo "        $PREFIX/lib/qt6/plugins/plasma/kcms/systemsettings/kcm_ktile.so"
+  echo "Or run: ./uninstall-kcm.sh"
+  echo
 fi
 echo "Reload the KWin script after edits (otherwise KWin keeps the old main.js in memory):"
 echo "  Easiest: open kTile in System Settings and click Apply."
