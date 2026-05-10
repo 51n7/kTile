@@ -2,7 +2,7 @@
 
 **kTile** is a snap-windows helper for **KDE Plasma 6**. You define rectangular **regions** on your displays (as fractions of the screen) and assign a **keyboard shortcut** to each. While a window is focused, pressing that shortcut moves and resizes the window into the matching region, similar to tiling presets, but driven by your own layout instead of a fixed grid.
 
-<img width="1060" height="1051" alt="Screenshot_20260507_140213" src="https://github.com/user-attachments/assets/8f35bb13-316f-4849-9578-ec385762c9e5" />
+<img width="1060" height="1051" alt="Screenshot Regions" src="https://github.com/user-attachments/assets/8f35bb13-316f-4849-9578-ec385762c9e5" />
 
 ## Quick install
 
@@ -29,6 +29,8 @@ Open **System Settings → Window Management → kTile**. There you can:
 - Optionally set shortcut for **opening kTile settings**
 
 Click **Apply** (or **OK**) so KWin picks up changes; the script reloads when settings are saved. If shortcuts were edited elsewhere (for example in **Keyboard → Shortcuts**), applying from this page keeps KWin’s script configuration in sync.
+
+<img width="1060" height="629" alt="Screenshot General" src="https://github.com/user-attachments/assets/89adc006-c173-4a5f-b8ab-4fe89288e8c2" />
 
 ## Usage
 
