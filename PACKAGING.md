@@ -75,6 +75,26 @@ Override where Debian build products are placed after the build (default: `~/deb
 KTILE_DEB_OUT=/path/to/out ./build.sh
 ```
 
+### Install the built package
+
+After **`./build.sh`**, install the binary package on the same machine:
+
+**Fedora / RHEL-style (RPM):**
+
+```bash
+./build.sh
+sudo dnf install ~/rpmbuild/RPMS/*/ktile-*.rpm
+```
+
+**Debian / Ubuntu (`.deb`):**
+
+```bash
+./build.sh
+sudo dpkg -i ~/debian/ktile-*.deb
+```
+
+If **`dpkg`** reports missing dependencies, run **`sudo apt-get install -f`** afterward.
+
 ## Troubleshooting (KCM / QML)
 
 If System Settings still shows an **old QML error** (for example mentioning `patterns`) after installing a **new `.deb` or RPM**, Plasma is usually loading a **different `kcm_ktile.so`** than the one from the package:
