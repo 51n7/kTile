@@ -1,0 +1,30 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+# kTile — KWin script + System Settings KCM (Plasma 6)
+# Used by ./build.sh (option 3): pkgver, pkgrel, and sha256sums are rewritten before makepkg.
+
+pkgname=ktile
+pkgver=0.1.0
+pkgrel=9
+pkgdesc='Custom window snap regions for KDE Plasma (KWin script + KCM)'
+arch=('x86_64' 'aarch64')
+url='https://github.com/51n7/kTile'
+license=('GPL-2.0-or-later')
+depends=('kwin' 'plasma-workspace' 'kcmutils' 'kirigami' 'kdeclarative')
+makedepends=('cmake' 'extra-cmake-modules' 'qt6-base' 'qt6-declarative' 'kcmutils' 'kconfig' 'kcoreaddons' 'ki18n')
+source=("ktile-${pkgver}.tar.gz")
+# Placeholder; ./build.sh replaces this line with the tarball checksum.
+sha256sums=('SKIP')
+
+build() {
+    cd "$srcdir/ktile-${pkgver}"
+    cmake -B build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -DKDE_INSTALL_USE_QT_SYS_PATHS=ON
+    cmake --build build
+}
+
+package() {
+    cd "$srcdir/ktile-${pkgver}"
+    DESTDIR="$pkgdir" cmake --install build
+}
