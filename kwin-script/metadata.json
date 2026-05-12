@@ -12,7 +12,7 @@
         ],
         "Category": "Utilities",
         "Description": "Reposition the active window to a custom screen region.",
-        "EnabledByDefault": false,
+        "EnabledByDefault": true,
         "Icon": "preferences-system-windows",
         "Id": "org.kde.ktile",
         "License": "GPL-2.0+",

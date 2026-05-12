@@ -162,24 +162,26 @@ bool waitForKTileKWinActionsRegistered(QDBusInterface &kglobalaccel, int regionC
     return false;
 }
 
-QString activeShortcutFromSerializedGlobalEntry(const QString &entry)
+QString activeFieldFromActiveDefaultPair(const QString &rest)
 {
-    if (entry.isEmpty()) {
-        return QString();
+    // kglobalshortcutsrc stores each binding as Active,Default[,Description]. Commas inside
+    // Active are escaped as \,. Find the rightmost *unescaped* comma so Active may be empty
+    // (leading comma) without mis-parsing ",Default" or ",," as a literal comma shortcut.
+    int split = -1;
+    for (int i = rest.size() - 1; i >= 0; --i) {
+        if (rest.at(i) != QLatin1Char(',')) {
+            continue;
+        }
+        int backslashes = 0;
+        for (int j = i - 1; j >= 0 && rest.at(j) == QLatin1Char('\\'); --j) {
+            ++backslashes;
+        }
+        if (backslashes % 2 == 0) {
+            split = i;
+            break;
+        }
     }
-    // kglobalshortcutsrc line: Active,Default,Description — commas also appear *inside* Active
-    // (e.g. Meta+Ctrl+, for the comma key), so splitting on every ',' breaks and yields
-    // "Meta+Ctrl+\\" while Keyboard settings still shows Meta+Ctrl+,.
-    QString rest = entry.trimmed();
-    static const QRegularExpression ktileDescSuffix(QStringLiteral(R"(,kTile: region \d+\s*$)"));
-    rest.remove(ktileDescSuffix);
-    static const QRegularExpression ktileOpenSuffix(QStringLiteral(R"(,kTile: Open settings\s*$)"));
-    rest.remove(ktileOpenSuffix);
-    static const QRegularExpression ktileMoveNextSuffix(QStringLiteral(R"(,kTile: Move window to next screen\s*$)"));
-    rest.remove(ktileMoveNextSuffix);
-
-    const int lastComma = rest.lastIndexOf(QLatin1Char(','));
-    QString active = (lastComma > 0) ? rest.left(lastComma) : rest;
+    QString active = split >= 0 ? rest.left(split) : rest;
     // KConfig escape: \, in the file becomes a comma inside the portable sequence.
     active.replace(QLatin1String("\\,"), QLatin1String(","));
 
@@ -192,6 +194,22 @@ QString activeShortcutFromSerializedGlobalEntry(const QString &entry)
         active = alternatives.constFirst().trimmed();
     }
     return active;
+}
+
+QString activeShortcutFromSerializedGlobalEntry(const QString &entry)
+{
+    if (entry.isEmpty()) {
+        return QString();
+    }
+    QString rest = entry.trimmed();
+    static const QRegularExpression ktileDescSuffix(QStringLiteral(R"(,kTile: region \d+\s*$)"));
+    rest.remove(ktileDescSuffix);
+    static const QRegularExpression ktileOpenSuffix(QStringLiteral(R"(,kTile: Open settings\s*$)"));
+    rest.remove(ktileOpenSuffix);
+    static const QRegularExpression ktileMoveNextSuffix(QStringLiteral(R"(,kTile: Move window to next screen\s*$)"));
+    rest.remove(ktileMoveNextSuffix);
+
+    return activeFieldFromActiveDefaultPair(rest);
 }
 }
 
