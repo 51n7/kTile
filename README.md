@@ -22,9 +22,6 @@
 
    You might need to log out and back in once so System Settings launched from the app menu sees the kTile (KCM) settings.
 
-3. In **System Settings → Window Management → KWin Scripts**, enable **kTile**.
-4. Continue under **Configuration** and **Usage** below.
-
 ## Configuration
 
 Open **System Settings → Window Management → kTile**. There you can:
@@ -33,9 +30,7 @@ Open **System Settings → Window Management → kTile**. There you can:
 - Reorder regions (**drag-and-drop**)
 - Edit each **region** on a **grid** (columns, rows, and gap define how the rectangle maps to the active screen)
 - Assign a **shortcut per region** using the standard key-sequence picker
-- Optionally set shortcut for **opening kTile settings**
-
-Click **Apply** (or **OK**) so KWin picks up changes; the script reloads when settings are saved. If shortcuts were edited elsewhere (for example in **Keyboard → Shortcuts**), applying from this page keeps KWin’s script configuration in sync.
+- Optionally set shortcut for **opening kTile settings** in the General tab
 
 <img width="1060" height="629" alt="Screenshot General" src="https://github.com/user-attachments/assets/89adc006-c173-4a5f-b8ab-4fe89288e8c2" />
 
