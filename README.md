@@ -6,11 +6,18 @@
 
 ## Quick install
 
-1. Install build dependencies (see **PACKAGING.md** or the message from `./install-kcm.sh` if `cmake` is missing).
+1. Grab your build file from the `dist` folder
 2. Run:
 
    ```bash
-   ./install-kcm.sh
+   # Fedora
+   sudo dnf install ~/dist/ktile-*.rpm
+
+   # Debian
+   sudo dpkg -i ~/dist/ktile-*.deb
+
+   # Arch
+   sudo pacman -U ~/dist/ktile-*.pkg.tar.zst
    ```
 
    You might need to log out and back in once so System Settings launched from the app menu sees the kTile (KCM) settings.
