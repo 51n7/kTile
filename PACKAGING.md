@@ -75,7 +75,7 @@ Override where Debian build products are placed after the build (default: `~/deb
 KTILE_DEB_OUT=/path/to/out ./build.sh
 ```
 
-### Install the built package
+## Install the built package
 
 After **`./build.sh`**, install the binary package on the same machine:
 
@@ -95,21 +95,3 @@ sudo dpkg -i ~/debian/ktile-*.deb
 
 If **`dpkg`** reports missing dependencies, run **`sudo apt-get install -f`** afterward.
 
-## Troubleshooting (KCM / QML)
-
-If System Settings still shows an **old QML error** (for example mentioning `patterns`) after installing a **new `.deb` or RPM**, Plasma is usually loading a **different `kcm_ktile.so`** than the one from the package:
-
-1. **User-prefix install** (`./install-kcm.sh` without `/usr`): `install-kcm.sh` adds `~/.config/plasma-workspace/env/ktile-paths.sh`, which puts **`~/.local` ahead of `/usr` on `QT_PLUGIN_PATH`**. Remove the user-built plugin or run `./uninstall-kcm.sh`, then **log out and back in** (or reboot) so session env reloads.
-2. Find copies: `find ~/.local /usr/lib -name kcm_ktile.so 2>/dev/null`
-3. Test without extra env: `env -u QT_PLUGIN_PATH kcmshell6 kcm_ktile` (may still inherit Plasma’s defaults — logging out after removing `~/.local` copies is the reliable fix).
-
-## Version bumps
-
-**Upstream version** (the `0.1.0` part):
-
-- Update `project(kTile VERSION ...)` in top-level `CMakeLists.txt`
-- `Version` in `kcm/kcm_ktile.json`
-- `Version` in `kwin-script/metadata.json`
-- `Version:` in `packaging/fedora/ktile.spec`
-
-**Packaging iteration** (the `-8` in `0.1.0-8.fc43` and `0.1.0-8` on Debian): bump **`packaging/PACKAGING_RELEASE`** (single integer, shared by RPM and DEB). Then sync **`packaging/debian/changelog`** (first line `ktile (<upstream>-<iteration>) …`) — use `dch` or edit by hand — and keep **`%global packrel`** in `packaging/fedora/ktile.spec` the same as `PACKAGING_RELEASE` (or rely on `./build.sh`, which substitutes `packrel` from `PACKAGING_RELEASE` when invoking `rpmbuild`).
