@@ -485,7 +485,7 @@ KCMUtils.SimpleKCM {
 
                             QQC2.Label {
                                 Layout.alignment: Qt.AlignVCenter
-                                text: "Shortcut to open these settings"
+                                text: "Open kTile Settings:"
                             }
 
                             Item {
@@ -512,7 +512,7 @@ KCMUtils.SimpleKCM {
 
                             QQC2.Label {
                                 Layout.alignment: Qt.AlignVCenter
-                                text: "Shortcut to open region picker"
+                                text: "Open Region Picker:"
                             }
 
                             Item {
@@ -567,7 +567,7 @@ KCMUtils.SimpleKCM {
 
                             QQC2.Label {
                                 Layout.alignment: Qt.AlignVCenter
-                                text: "Export/Import"
+                                text: "Export/Import:"
                             }
 
                             Item {
@@ -578,14 +578,14 @@ KCMUtils.SimpleKCM {
                             QQC2.Button {
                                 Layout.alignment: Qt.AlignVCenter
                                 icon.name: "document-export"
-                                text: "Export…"
+                                text: "Export..."
                                 onClicked: exportSettingsDialog.open()
                             }
 
                             QQC2.Button {
                                 Layout.alignment: Qt.AlignVCenter
                                 icon.name: "document-import"
-                                text: "Import…"
+                                text: "Import..."
                                 onClicked: importSettingsDialog.open()
                             }
                         }
