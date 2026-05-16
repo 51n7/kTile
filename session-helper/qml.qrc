@@ -1,0 +1,7 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/">
+        <file>qml/RegionPicker.qml</file>
+        <file>qml/RegionBlock.qml</file>
+    </qresource>
+</RCC>

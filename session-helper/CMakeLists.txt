@@ -1,10 +1,20 @@
 # SPDX-License-Identifier: BSD-2-Clause
 
-add_executable(ktile-session-helper main.cpp)
+qt_add_executable(ktile-session-helper
+    main.cpp
+    regionpickercontroller.cpp
+    regionpickercontroller.h
+    qml.qrc
+)
+
 target_link_libraries(ktile-session-helper PRIVATE
     Qt6::Core
     Qt6::DBus
+    Qt6::Gui
+    Qt6::Qml
+    Qt6::Quick
 )
+
 install(TARGETS ktile-session-helper DESTINATION ${KDE_INSTALL_BINDIR})
 
 configure_file(

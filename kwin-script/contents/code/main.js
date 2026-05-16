@@ -600,6 +600,30 @@ function applyGapToClippedRect(rect, wa, gap) {
     return { x: x, y: y, w: w, h: h };
 }
 
+/** Session-helper region picker overlay; must not be tiled by kTile shortcuts. */
+function isKTilePickerWindow(wnd) {
+    if (!wnd) {
+        return false;
+    }
+    try {
+        const caption = String(wnd.caption || "");
+        if (caption.indexOf("kTile Region Picker") >= 0) {
+            return true;
+        }
+        const windowClass = String(wnd.windowClass || "");
+        if (/ktile/i.test(windowClass)) {
+            return true;
+        }
+        const resourceName = String(wnd.resourceName || "");
+        if (/ktile/i.test(resourceName)) {
+            return true;
+        }
+    } catch (e) {
+        // Fall through.
+    }
+    return false;
+}
+
 function applyFrameGeometry(wnd, x, y, width, height) {
     const xi = Math.round(Number(x));
     const yi = Math.round(Number(y));
@@ -651,6 +675,9 @@ function snapActivePercentFromConfig(configKey, defaultSpec) {
     if (!wnd.normalWindow) {
         return;
     }
+    if (isKTilePickerWindow(wnd)) {
+        return;
+    }
     const spec = readConfig(configKey, defaultSpec);
     const r = parseRect(spec);
     if (!r.ok) {
@@ -688,6 +715,9 @@ function snapActiveAbsoluteFromConfig(configKey, defaultSpec) {
         return;
     }
     if (!wnd.normalWindow) {
+        return;
+    }
+    if (isKTilePickerWindow(wnd)) {
         return;
     }
     const spec = readConfig(configKey, defaultSpec);
@@ -798,6 +828,9 @@ function moveActiveWindowToNextScreen() {
     if (!wnd.normalWindow) {
         return;
     }
+    if (isKTilePickerWindow(wnd)) {
+        return;
+    }
     try {
         if (typeof workspace.slotWindowToNextScreen === "function") {
             workspace.slotWindowToNextScreen();
@@ -836,3 +869,27 @@ function moveActiveWindowToNextScreen() {
         print("kTile: failed to register Move window to next screen shortcut, value:", shortcut);
     }
 }
+
+function openRegionPickerViaDBus() {
+    callDBus(
+        "org.kde.ktile",
+        "/KTile",
+        "org.kde.ktile.KTile",
+        "showRegionPicker"
+    );
+}
+
+{
+    const configured = readConfig("openRegionPickerShortcut", "");
+    const shortcut = normalizeShortcut(configured);
+    const ok = registerShortcut(
+        "kTile: Open region picker",
+        "kTile: Open region picker",
+        shortcut,
+        openRegionPickerViaDBus
+    );
+    if (!ok) {
+        print("kTile: failed to register Open region picker shortcut, value:", shortcut);
+    }
+}
+

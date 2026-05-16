@@ -146,6 +146,9 @@ bool waitForKTileKWinActionsRegistered(QDBusInterface &kglobalaccel, int regionC
             if (ok) {
                 ok = names.contains(QLatin1String("kTile: Move window to next screen"));
             }
+            if (ok) {
+                ok = names.contains(QLatin1String("kTile: Open region picker"));
+            }
             for (int i = 1; i <= regionCount && ok; ++i) {
                 if (!names.contains(QStringLiteral("kTile: region %1").arg(i))) {
                     ok = false;
@@ -155,7 +158,7 @@ bool waitForKTileKWinActionsRegistered(QDBusInterface &kglobalaccel, int regionC
                 return true;
             }
         }
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
+        QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents, 50);
         QThread::msleep(50);
     }
     qCWarning(KCM_KTILE) << "Timed out waiting for kTile actions from KWin (regionCount" << regionCount << ").";
@@ -208,6 +211,8 @@ QString activeShortcutFromSerializedGlobalEntry(const QString &entry)
     rest.remove(ktileOpenSuffix);
     static const QRegularExpression ktileMoveNextSuffix(QStringLiteral(R"(,kTile: Move window to next screen\s*$)"));
     rest.remove(ktileMoveNextSuffix);
+    static const QRegularExpression ktileRegionPickerSuffix(QStringLiteral(R"(,kTile: Open region picker\s*$)"));
+    rest.remove(ktileRegionPickerSuffix);
 
     return activeFieldFromActiveDefaultPair(rest);
 }
@@ -246,6 +251,10 @@ void KcmKTile::updateRepresentsDefaults()
         return;
     }
     if (!m_moveToNextScreenShortcut.isEmpty()) {
+        setRepresentsDefaults(false);
+        return;
+    }
+    if (!m_openRegionPickerShortcut.isEmpty()) {
         setRepresentsDefaults(false);
         return;
     }
@@ -398,6 +407,23 @@ void KcmKTile::setMoveToNextScreenShortcut(const QString &value)
     updateRepresentsDefaults();
 }
 
+QString KcmKTile::openRegionPickerShortcut() const
+{
+    return m_openRegionPickerShortcut;
+}
+
+void KcmKTile::setOpenRegionPickerShortcut(const QString &value)
+{
+    const QString normalized = normalizeShortcutSequence(value);
+    if (m_openRegionPickerShortcut == normalized) {
+        return;
+    }
+    m_openRegionPickerShortcut = normalized;
+    Q_EMIT openRegionPickerShortcutChanged();
+    setNeedsSave(true);
+    updateRepresentsDefaults();
+}
+
 void KcmKTile::connectScreenGeometryUpdates()
 {
     const auto wireScreen = [this](QScreen *screen) {
@@ -539,6 +565,7 @@ QString KcmKTile::exportSettingsJson() const
     root.insert(QStringLiteral("gridGap"), m_gridGap);
     root.insert(QStringLiteral("openSettingsShortcut"), normalizeShortcutSequence(m_openSettingsShortcut));
     root.insert(QStringLiteral("moveToNextScreenShortcut"), normalizeShortcutSequence(m_moveToNextScreenShortcut));
+    root.insert(QStringLiteral("openRegionPickerShortcut"), normalizeShortcutSequence(m_openRegionPickerShortcut));
 
     QJsonArray regionsArr;
     for (const RegionEntry &e : m_regions) {
@@ -630,12 +657,15 @@ QString KcmKTile::importSettingsFromJson(const QString &json)
     m_openSettingsShortcut = normalizeShortcutSequence(root.value(QLatin1String("openSettingsShortcut")).toString());
     m_moveToNextScreenShortcut =
         normalizeShortcutSequence(root.value(QLatin1String("moveToNextScreenShortcut")).toString());
+    m_openRegionPickerShortcut =
+        normalizeShortcutSequence(root.value(QLatin1String("openRegionPickerShortcut")).toString());
     m_regions = std::move(newRegions);
 
     emitRegionsChanged();
     Q_EMIT gridLayoutChanged();
     Q_EMIT openSettingsShortcutChanged();
     Q_EMIT moveToNextScreenShortcutChanged();
+    Q_EMIT openRegionPickerShortcutChanged();
     updateRepresentsDefaults();
 
     save();
@@ -722,6 +752,20 @@ void KcmKTile::load()
     }
     m_moveToNextScreenShortcut = nextShortcut;
 
+    const QString regionPickerActionName = QStringLiteral("kTile: Open region picker");
+    const QString storedRegionPickerShortcut =
+        normalizeShortcutSequence(g.readEntry(QStringLiteral("openRegionPickerShortcut"), QString()));
+    QString regionPickerShortcut = storedRegionPickerShortcut;
+    if (kwinShortcuts.hasKey(regionPickerActionName)) {
+        const QString serialized = kwinShortcuts.readEntry(regionPickerActionName, QString());
+        regionPickerShortcut = normalizeShortcutSequence(activeShortcutFromSerializedGlobalEntry(serialized));
+    }
+    if (regionPickerShortcut != storedRegionPickerShortcut) {
+        g.writeEntry(QStringLiteral("openRegionPickerShortcut"), regionPickerShortcut);
+        shortcutsRepaired = true;
+    }
+    m_openRegionPickerShortcut = regionPickerShortcut;
+
     m_regions.clear();
     m_regions.reserve(count);
     for (int i = 1; i <= count; ++i) {
@@ -755,12 +799,25 @@ void KcmKTile::load()
     Q_EMIT virtualGeometryChanged();
     Q_EMIT openSettingsShortcutChanged();
     Q_EMIT moveToNextScreenShortcutChanged();
+    Q_EMIT openRegionPickerShortcutChanged();
     updateRepresentsDefaults();
     setNeedsSave(false);
 }
 
 void KcmKTile::save()
 {
+    if (m_saveInProgress) {
+        return;
+    }
+    m_saveInProgress = true;
+    struct SaveGuard {
+        KcmKTile *self;
+        ~SaveGuard()
+        {
+            self->m_saveInProgress = false;
+        }
+    } guard{this};
+
     KSharedConfig::Ptr cfg = KSharedConfig::openConfig(kKWinConfigFile);
     KConfigGroup g(cfg, kScriptConfigGroup);
     // The current KCM edits regions as percentages of the active display.
@@ -773,6 +830,7 @@ void KcmKTile::save()
     g.writeEntry(QStringLiteral("gridGap"), m_gridGap);
     g.writeEntry(QStringLiteral("openSettingsShortcut"), normalizeShortcutSequence(m_openSettingsShortcut));
     g.writeEntry(QStringLiteral("moveToNextScreenShortcut"), normalizeShortcutSequence(m_moveToNextScreenShortcut));
+    g.writeEntry(QStringLiteral("openRegionPickerShortcut"), normalizeShortcutSequence(m_openRegionPickerShortcut));
     for (int i = 0; i < m_regions.size(); ++i) {
         const int oneBased = i + 1;
         g.writeEntry(QStringLiteral("region%1").arg(oneBased), m_regions.at(i).region);
@@ -795,6 +853,8 @@ void KcmKTile::save()
     }
     kwinShortcuts.deleteEntry(QStringLiteral("kTile: Open settings"));
     kwinShortcuts.deleteEntry(QStringLiteral("kTile: Move window to next screen"));
+    kwinShortcuts.deleteEntry(QStringLiteral("kTile: Open region picker"));
+    kwinShortcuts.deleteEntry(QStringLiteral("kTile: Close region picker"));
     shortcutsCfg->sync();
 
     // Force runtime re-registration for all kTile region actions so updates to
@@ -817,7 +877,8 @@ void KcmKTile::save()
                 const QString actionName = actionId.at(1);
                 const QRegularExpressionMatch m = regionActionRe.match(actionName);
                 if (!m.hasMatch() && actionName != QLatin1String("kTile: Open settings")
-                    && actionName != QLatin1String("kTile: Move window to next screen")) {
+                    && actionName != QLatin1String("kTile: Move window to next screen")
+                    && actionName != QLatin1String("kTile: Open region picker")) {
                     continue;
                 }
                 kglobalaccel.call(QStringLiteral("unRegister"), actionId);
@@ -901,6 +962,18 @@ void KcmKTile::save()
                         QVariant::fromValue(keys));
                     continue;
                 }
+                if (actionName == QLatin1String("kTile: Open region picker")) {
+                    const QList<int> keys = keysListFromShortcutString(m_openRegionPickerShortcut);
+                    if (keys.isEmpty() && !m_openRegionPickerShortcut.isEmpty()) {
+                        qCWarning(KCM_KTILE) << "Could not convert shortcut to key codes for" << actionName
+                                             << "text:" << m_openRegionPickerShortcut;
+                    }
+                    kglobalaccel.call(
+                        QStringLiteral("setForeignShortcut"),
+                        QVariant::fromValue(actionId),
+                        QVariant::fromValue(keys));
+                    continue;
+                }
             }
         }
     }
@@ -915,12 +988,14 @@ void KcmKTile::defaults()
     m_gridGap = kDefaultGridGap;
     m_openSettingsShortcut.clear();
     m_moveToNextScreenShortcut.clear();
+    m_openRegionPickerShortcut.clear();
     m_regions.clear();
     m_regions.push_back({defaultRegionForIndex(1), defaultShortcutForIndex(1), -1});
     emitRegionsChanged();
     Q_EMIT gridLayoutChanged();
     Q_EMIT openSettingsShortcutChanged();
     Q_EMIT moveToNextScreenShortcutChanged();
+    Q_EMIT openRegionPickerShortcutChanged();
     setNeedsSave(true);
     updateRepresentsDefaults();
 }
@@ -934,7 +1009,8 @@ void KcmKTile::onGlobalShortcutChanged(const QStringList &actionId, const QList<
     const QString actionName = actionId.at(1);
     static const QRegularExpression regionActionRe(QStringLiteral("^kTile: region (\\d+)$"));
     if (!regionActionRe.match(actionName).hasMatch() && actionName != QLatin1String("kTile: Open settings")
-        && actionName != QLatin1String("kTile: Move window to next screen")) {
+        && actionName != QLatin1String("kTile: Move window to next screen")
+        && actionName != QLatin1String("kTile: Open region picker")) {
         return;
     }
     // Do not overwrite in-progress unsaved edits in this KCM.

@@ -2,24 +2,35 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 /**
- * D-Bus service for opening the kTile KCM. The global shortcut is registered by the KWin script
- * (same component as region shortcuts → Window Management in Shortcuts). Pressing the shortcut
- * runs this process's open() method; KWin calls it via callDBus (reliable) instead of klauncher.
+ * D-Bus service for kTile: open KCM settings and show the region picker overlay.
+ * Global shortcuts are registered by the KWin script; it invokes these methods via callDBus.
  */
+
+#include "regionpickercontroller.h"
 
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QDBusAbstractAdaptor>
 #include <QDBusConnection>
 #include <QDir>
-#include <QDebug>
 #include <QFile>
 #include <QFileInfo>
+#include <QGuiApplication>
 #include <QObject>
+#include <QScreen>
 #include <QProcess>
 #include <QProcessEnvironment>
+#include <QQmlApplicationEngine>
+#include <QQmlContext>
+#include <QEvent>
+#include <QKeyEvent>
+#include <QQuickWindow>
+#include <QPoint>
+#include <QRect>
+#include <QSize>
 #include <QStandardPaths>
 #include <QTextStream>
+#include <QTimer>
 
 namespace
 {
@@ -114,7 +125,137 @@ bool startDetachedWithSessionEnv(const QString &program, const QStringList &args
                      env.value(QStringLiteral("XDG_RUNTIME_DIR"))));
     return ok;
 }
+
+class PickerEscapeFilter : public QObject
+{
+    Q_OBJECT
+
+public:
+    PickerEscapeFilter(RegionPickerController *controller, QQuickWindow *window, QObject *parent = nullptr)
+        : QObject(parent)
+        , m_controller(controller)
+        , m_window(window)
+    {
+    }
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override
+    {
+        if (watched != m_window || !m_window || !m_window->isVisible()) {
+            return false;
+        }
+        if (event->type() != QEvent::KeyPress) {
+            return false;
+        }
+        const auto *keyEvent = static_cast<QKeyEvent *>(event);
+        if (keyEvent->key() == Qt::Key_Escape || keyEvent->key() == Qt::Key_Cancel) {
+            m_controller->closePicker();
+            return true;
+        }
+        return false;
+    }
+
+private:
+    RegionPickerController *m_controller = nullptr;
+    QPointer<QQuickWindow> m_window;
+};
+
+namespace
+{
+void focusEscapeTrap(QQuickWindow *window)
+{
+    if (!window) {
+        return;
+    }
+    QObject *trap = window->findChild<QObject *>(QStringLiteral("ktileEscapeTrap"));
+    if (trap) {
+        QMetaObject::invokeMethod(trap, "forceActiveFocus", Qt::DirectConnection,
+                                 Q_ARG(Qt::FocusReason, Qt::OtherFocusReason));
+    }
 }
+
+void resetPickerShellGeometry(QQuickWindow *window)
+{
+    if (!window) {
+        return;
+    }
+    QScreen *screen = QGuiApplication::primaryScreen();
+    if (!screen) {
+        return;
+    }
+    const QRect available = screen->availableGeometry();
+    window->setMinimumSize(QSize(0, 0));
+    window->setMaximumSize(QSize(16777215, 16777215));
+    window->setGeometry(available);
+}
+}
+
+class RegionPickerHost : public QObject
+{
+    Q_OBJECT
+
+public:
+    explicit RegionPickerHost(QQmlApplicationEngine *engine, QObject *parent = nullptr)
+        : QObject(parent)
+        , m_engine(engine)
+        , m_controller(new RegionPickerController(this))
+    {
+        connect(m_controller, &RegionPickerController::requestClose, this, &RegionPickerHost::hidePicker);
+        RegionPickerController::purgeStaleClosePickerEscape();
+    }
+
+    bool isPickerVisible() const
+    {
+        return m_window && m_window->isVisible();
+    }
+
+    void showPicker()
+    {
+        if (!m_engine) {
+            return;
+        }
+
+        m_controller->reloadFromConfig();
+
+        if (!m_window) {
+            m_engine->rootContext()->setContextProperty(QStringLiteral("pickerController"), m_controller);
+            m_engine->load(QUrl(QStringLiteral("qrc:/qml/RegionPicker.qml")));
+            if (m_engine->rootObjects().isEmpty()) {
+                logLine(QStringLiteral("showPicker: failed to load RegionPicker.qml"));
+                return;
+            }
+            m_window = qobject_cast<QQuickWindow *>(m_engine->rootObjects().constFirst());
+            if (m_window) {
+                m_escapeFilter = new PickerEscapeFilter(m_controller, m_window, m_window);
+                m_window->installEventFilter(m_escapeFilter);
+            }
+        }
+
+        if (!m_window) {
+            logLine(QStringLiteral("showPicker: root object is not a window"));
+            return;
+        }
+
+        resetPickerShellGeometry(m_window);
+        m_window->show();
+        m_window->raise();
+        m_window->requestActivate();
+        focusEscapeTrap(m_window);
+    }
+
+    void hidePicker()
+    {
+        if (m_window) {
+            m_window->hide();
+        }
+    }
+
+private:
+    QQmlApplicationEngine *m_engine = nullptr;
+    QPointer<RegionPickerController> m_controller;
+    QPointer<QQuickWindow> m_window;
+    QPointer<QObject> m_escapeFilter;
+};
 
 class KTileAdaptor : public QDBusAbstractAdaptor
 {
@@ -122,8 +263,9 @@ class KTileAdaptor : public QDBusAbstractAdaptor
     Q_CLASSINFO("D-Bus Interface", "org.kde.ktile.KTile")
 
 public:
-    explicit KTileAdaptor(QObject *parent)
+    explicit KTileAdaptor(RegionPickerHost *pickerHost, QObject *parent)
         : QDBusAbstractAdaptor(parent)
+        , m_pickerHost(pickerHost)
     {
     }
 
@@ -155,17 +297,40 @@ public Q_SLOTS:
         qWarning() << "ktile-session-helper: failed to launch kcm_ktile via kcmshell6/systemsettings";
         logLine(QStringLiteral("open(): launch failed via kcmshell6 and systemsettings"));
     }
+
+    void showRegionPicker()
+    {
+        logLine(QStringLiteral("DBus showRegionPicker() invoked"));
+        if (m_pickerHost) {
+            QMetaObject::invokeMethod(m_pickerHost, &RegionPickerHost::showPicker, Qt::QueuedConnection);
+        }
+    }
+
+    void closeRegionPicker()
+    {
+        logLine(QStringLiteral("DBus closeRegionPicker() invoked"));
+        if (m_pickerHost && m_pickerHost->isPickerVisible()) {
+            QMetaObject::invokeMethod(m_pickerHost, &RegionPickerHost::hidePicker, Qt::QueuedConnection);
+        }
+    }
+
+private:
+    RegionPickerHost *m_pickerHost = nullptr;
 };
+}
 
 int main(int argc, char **argv)
 {
-    QCoreApplication app(argc, argv);
-    QCoreApplication::setApplicationName(QStringLiteral("org.kde.ktile"));
-    QCoreApplication::setOrganizationDomain(QStringLiteral("kde.org"));
+    QGuiApplication app(argc, argv);
+    QGuiApplication::setApplicationName(QStringLiteral("org.kde.ktile"));
+    QGuiApplication::setOrganizationDomain(QStringLiteral("kde.org"));
     logLine(QStringLiteral("helper start pid=%1").arg(QCoreApplication::applicationPid()));
 
+    QQmlApplicationEngine engine;
+    RegionPickerHost pickerHost(&engine);
+
     QObject root;
-    new KTileAdaptor(&root);
+    new KTileAdaptor(&pickerHost, &root);
 
     QDBusConnection bus = QDBusConnection::sessionBus();
     if (!bus.registerService(QStringLiteral("org.kde.ktile"))) {
