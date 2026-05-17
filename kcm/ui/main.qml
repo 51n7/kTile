@@ -60,6 +60,26 @@ KCMUtils.SimpleKCM {
     readonly property color accentLineColor: Kirigami.Theme.highlightColor
     readonly property int regionListMaxWidth: Kirigami.Units.gridUnit * 52
 
+    // Standalone kcmshell6 otherwise gives the page the full screen height; cap the body and scroll inside.
+    readonly property real maxViewportHeight: {
+        let available = 900
+        if (Qt.application.screens.length > 0) {
+            available = Qt.application.screens[0].availableHeight
+        }
+        return Math.min(Kirigami.Units.gridUnit * 54, available * 0.72)
+    }
+    readonly property real bodyContentHeight: scrollContent.implicitHeight
+    readonly property real bodyViewportHeight: Math.max(
+        Kirigami.Units.gridUnit * 14,
+        Math.min(bodyContentHeight, maxViewportHeight))
+
+    implicitWidth: Math.min(regionListMaxWidth + Kirigami.Units.gridUnit * 10,
+                            Kirigami.Units.gridUnit * 56)
+    implicitHeight: bodyViewportHeight
+                      + (header ? header.implicitHeight : 0)
+                      + (footer ? footer.implicitHeight : 0)
+                      + topPadding + bottomPadding
+
     function normalizeShortcutText(sequence) {
         let s = String(sequence || "").trim()
         if (!s || /^none(,none)?$/i.test(s) || s === ", ,none") {
@@ -194,11 +214,12 @@ KCMUtils.SimpleKCM {
     Flickable {
         id: pageFlick
         width: parent.width
+        height: ktileRoot.bodyViewportHeight
         contentWidth: width
         contentHeight: scrollContent.implicitHeight
         clip: true
         boundsBehavior: Flickable.StopAtBounds
-        interactive: true
+        interactive: bodyContentHeight > bodyViewportHeight
 
         Item {
             id: scrollContent
