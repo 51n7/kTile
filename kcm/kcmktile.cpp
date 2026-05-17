@@ -60,6 +60,8 @@ static constexpr int kDefaultGridColumns = 8;
 static constexpr int kDefaultGridRows = 6;
 static constexpr int kDefaultGridGap = 0;
 static constexpr qreal kDefaultRegionPickerOverlayOpacity = 0.30;
+static constexpr qreal kDefaultDrawRegionOverlayOpacity = 0.30;
+static constexpr bool kDefaultDrawRegionShowGridLines = false;
 static constexpr bool kDefaultRegionPickerShowHeader = true;
 static constexpr int kSettingsJsonVersion = 1;
 
@@ -77,11 +79,28 @@ int jsonVersionFromRoot(const QJsonObject &root)
     return v.toInt();
 }
 
+QString activeShortcutFromSerializedGlobalEntry(const QString &entry);
+
 QString normalizeShortcutSequence(const QString &sequence)
 {
     QString s = sequence.trimmed();
     if (s.isEmpty()) {
         return s;
+    }
+    // Repair kglobalshortcutsrc-shaped values accidentally stored in kwinrc (e.g. "none,none").
+    if (!s.contains(QLatin1String("kTile:")) && s.contains(QLatin1String(",none"))) {
+        s = activeShortcutFromSerializedGlobalEntry(s + QLatin1String(",kTile: _repair"));
+    }
+    if (s.compare(QLatin1String("none"), Qt::CaseInsensitive) == 0) {
+        return QString();
+    }
+    // Malformed parse residue when description suffix was not stripped (older builds).
+    if (s == QLatin1String(", ,none") || s == QLatin1String(", , none")) {
+        return QString();
+    }
+    // Collapse duplicate trailing comma key (e.g. "Meta+Ctrl+,," → "Meta+Ctrl+,").
+    while (s.endsWith(QLatin1String(",,")) && s.contains(QLatin1Char('+'))) {
+        s.chop(1);
     }
     // Keep this in sync with kcm/ui/main.qml normalizeShortcutText() and
     // kwin-script/main.js normalizeShortcut(). Canonicalize to "/" form.
@@ -141,6 +160,8 @@ bool isKTileKGlobalActionName(const QString &actionName)
     return actionName == QLatin1String("kTile: Open settings")
         || actionName == QLatin1String("kTile: Move window to next screen")
         || actionName == QLatin1String("kTile: Open region picker")
+        || actionName == QLatin1String("kTile: Draw region on screen")
+        || actionName == QLatin1String("kTile: Apply drawn region")
         || actionName == QLatin1String("kTile: Close region picker");
 }
 
@@ -234,6 +255,9 @@ bool waitForKTileKWinActionsRegistered(QDBusInterface &kglobalaccel, int regionC
             if (ok) {
                 ok = names.contains(QLatin1String("kTile: Open region picker"));
             }
+            if (ok) {
+                ok = names.contains(QLatin1String("kTile: Draw region on screen"));
+            }
             for (int i = 1; i <= regionCount && ok; ++i) {
                 if (!names.contains(QStringLiteral("kTile: region %1").arg(i))) {
                     ok = false;
@@ -298,6 +322,12 @@ QString activeShortcutFromSerializedGlobalEntry(const QString &entry)
     rest.remove(ktileMoveNextSuffix);
     static const QRegularExpression ktileRegionPickerSuffix(QStringLiteral(R"(,kTile: Open region picker\s*$)"));
     rest.remove(ktileRegionPickerSuffix);
+    static const QRegularExpression ktileDrawRegionSuffix(QStringLiteral(R"(,kTile: Draw region on screen\s*$)"));
+    rest.remove(ktileDrawRegionSuffix);
+    static const QRegularExpression ktileApplyDrawnRegionSuffix(QStringLiteral(R"(,kTile: Apply drawn region\s*$)"));
+    rest.remove(ktileApplyDrawnRegionSuffix);
+    static const QRegularExpression ktileCloseRegionPickerSuffix(QStringLiteral(R"(,kTile: Close region picker\s*$)"));
+    rest.remove(ktileCloseRegionPickerSuffix);
 
     return activeFieldFromActiveDefaultPair(rest);
 }
@@ -343,7 +373,19 @@ void KcmKTile::updateRepresentsDefaults()
         setRepresentsDefaults(false);
         return;
     }
+    if (!m_openDrawRegionShortcut.isEmpty()) {
+        setRepresentsDefaults(false);
+        return;
+    }
     if (!qFuzzyCompare(m_regionPickerOverlayOpacity + 1.0, kDefaultRegionPickerOverlayOpacity + 1.0)) {
+        setRepresentsDefaults(false);
+        return;
+    }
+    if (!qFuzzyCompare(m_drawRegionOverlayOpacity + 1.0, kDefaultDrawRegionOverlayOpacity + 1.0)) {
+        setRepresentsDefaults(false);
+        return;
+    }
+    if (m_drawRegionShowGridLines != kDefaultDrawRegionShowGridLines) {
         setRepresentsDefaults(false);
         return;
     }
@@ -517,6 +559,23 @@ void KcmKTile::setOpenRegionPickerShortcut(const QString &value)
     updateRepresentsDefaults();
 }
 
+QString KcmKTile::openDrawRegionShortcut() const
+{
+    return m_openDrawRegionShortcut;
+}
+
+void KcmKTile::setOpenDrawRegionShortcut(const QString &value)
+{
+    const QString normalized = normalizeShortcutSequence(value);
+    if (m_openDrawRegionShortcut == normalized) {
+        return;
+    }
+    m_openDrawRegionShortcut = normalized;
+    Q_EMIT openDrawRegionShortcutChanged();
+    setNeedsSave(true);
+    updateRepresentsDefaults();
+}
+
 qreal KcmKTile::regionPickerOverlayOpacity() const
 {
     return m_regionPickerOverlayOpacity;
@@ -530,6 +589,39 @@ void KcmKTile::setRegionPickerOverlayOpacity(qreal value)
     }
     m_regionPickerOverlayOpacity = v;
     Q_EMIT regionPickerOverlayOpacityChanged();
+    setNeedsSave(true);
+    updateRepresentsDefaults();
+}
+
+qreal KcmKTile::drawRegionOverlayOpacity() const
+{
+    return m_drawRegionOverlayOpacity;
+}
+
+void KcmKTile::setDrawRegionOverlayOpacity(qreal value)
+{
+    const qreal v = clampRegionPickerOverlayOpacity(value);
+    if (qFuzzyCompare(m_drawRegionOverlayOpacity, v)) {
+        return;
+    }
+    m_drawRegionOverlayOpacity = v;
+    Q_EMIT drawRegionOverlayOpacityChanged();
+    setNeedsSave(true);
+    updateRepresentsDefaults();
+}
+
+bool KcmKTile::drawRegionShowGridLines() const
+{
+    return m_drawRegionShowGridLines;
+}
+
+void KcmKTile::setDrawRegionShowGridLines(bool value)
+{
+    if (m_drawRegionShowGridLines == value) {
+        return;
+    }
+    m_drawRegionShowGridLines = value;
+    Q_EMIT drawRegionShowGridLinesChanged();
     setNeedsSave(true);
     updateRepresentsDefaults();
 }
@@ -692,7 +784,10 @@ QString KcmKTile::exportSettingsJson() const
     root.insert(QStringLiteral("openSettingsShortcut"), normalizeShortcutSequence(m_openSettingsShortcut));
     root.insert(QStringLiteral("moveToNextScreenShortcut"), normalizeShortcutSequence(m_moveToNextScreenShortcut));
     root.insert(QStringLiteral("openRegionPickerShortcut"), normalizeShortcutSequence(m_openRegionPickerShortcut));
+    root.insert(QStringLiteral("openDrawRegionShortcut"), normalizeShortcutSequence(m_openDrawRegionShortcut));
     root.insert(QStringLiteral("regionPickerOverlayOpacity"), m_regionPickerOverlayOpacity);
+    root.insert(QStringLiteral("drawRegionOverlayOpacity"), m_drawRegionOverlayOpacity);
+    root.insert(QStringLiteral("drawRegionShowGridLines"), m_drawRegionShowGridLines);
     root.insert(QStringLiteral("regionPickerShowHeader"), m_regionPickerShowHeader);
 
     QJsonArray regionsArr;
@@ -787,8 +882,18 @@ QString KcmKTile::importSettingsFromJson(const QString &json)
         normalizeShortcutSequence(root.value(QLatin1String("moveToNextScreenShortcut")).toString());
     m_openRegionPickerShortcut =
         normalizeShortcutSequence(root.value(QLatin1String("openRegionPickerShortcut")).toString());
+    m_openDrawRegionShortcut =
+        normalizeShortcutSequence(root.value(QLatin1String("openDrawRegionShortcut")).toString());
     m_regionPickerOverlayOpacity = clampRegionPickerOverlayOpacity(
         qreal(root.value(QLatin1String("regionPickerOverlayOpacity")).toDouble(kDefaultRegionPickerOverlayOpacity)));
+    if (root.contains(QLatin1String("drawRegionOverlayOpacity"))) {
+        m_drawRegionOverlayOpacity = clampRegionPickerOverlayOpacity(
+            qreal(root.value(QLatin1String("drawRegionOverlayOpacity")).toDouble(kDefaultDrawRegionOverlayOpacity)));
+    } else {
+        m_drawRegionOverlayOpacity = m_regionPickerOverlayOpacity;
+    }
+    m_drawRegionShowGridLines =
+        root.value(QLatin1String("drawRegionShowGridLines")).toBool(kDefaultDrawRegionShowGridLines);
     m_regionPickerShowHeader = root.value(QLatin1String("regionPickerShowHeader")).toBool(kDefaultRegionPickerShowHeader);
     m_regions = std::move(newRegions);
 
@@ -797,7 +902,10 @@ QString KcmKTile::importSettingsFromJson(const QString &json)
     Q_EMIT openSettingsShortcutChanged();
     Q_EMIT moveToNextScreenShortcutChanged();
     Q_EMIT openRegionPickerShortcutChanged();
+    Q_EMIT openDrawRegionShortcutChanged();
     Q_EMIT regionPickerOverlayOpacityChanged();
+    Q_EMIT drawRegionOverlayOpacityChanged();
+    Q_EMIT drawRegionShowGridLinesChanged();
     Q_EMIT regionPickerShowHeaderChanged();
     updateRepresentsDefaults();
 
@@ -852,6 +960,15 @@ void KcmKTile::load()
     m_gridGap = std::clamp(g.readEntry(QStringLiteral("gridGap"), kDefaultGridGap), 0, kGridGapMax);
     m_regionPickerOverlayOpacity = clampRegionPickerOverlayOpacity(
         g.readEntry(QStringLiteral("regionPickerOverlayOpacity"), kDefaultRegionPickerOverlayOpacity));
+    if (g.hasKey(QStringLiteral("drawRegionOverlayOpacity"))) {
+        m_drawRegionOverlayOpacity = clampRegionPickerOverlayOpacity(
+            g.readEntry(QStringLiteral("drawRegionOverlayOpacity"), kDefaultDrawRegionOverlayOpacity));
+    } else {
+        // Existing installs used region-picker opacity for draw-region overlay.
+        m_drawRegionOverlayOpacity = m_regionPickerOverlayOpacity;
+    }
+    m_drawRegionShowGridLines =
+        g.readEntry(QStringLiteral("drawRegionShowGridLines"), kDefaultDrawRegionShowGridLines);
     m_regionPickerShowHeader =
         g.readEntry(QStringLiteral("regionPickerShowHeader"), kDefaultRegionPickerShowHeader);
 
@@ -903,6 +1020,20 @@ void KcmKTile::load()
     }
     m_openRegionPickerShortcut = regionPickerShortcut;
 
+    const QString drawRegionActionName = QStringLiteral("kTile: Draw region on screen");
+    const QString storedDrawRegionShortcut =
+        normalizeShortcutSequence(g.readEntry(QStringLiteral("openDrawRegionShortcut"), QString()));
+    QString drawRegionShortcut = storedDrawRegionShortcut;
+    if (kwinShortcuts.hasKey(drawRegionActionName)) {
+        const QString serialized = kwinShortcuts.readEntry(drawRegionActionName, QString());
+        drawRegionShortcut = normalizeShortcutSequence(activeShortcutFromSerializedGlobalEntry(serialized));
+    }
+    if (drawRegionShortcut != storedDrawRegionShortcut) {
+        g.writeEntry(QStringLiteral("openDrawRegionShortcut"), drawRegionShortcut);
+        shortcutsRepaired = true;
+    }
+    m_openDrawRegionShortcut = drawRegionShortcut;
+
     m_regions.clear();
     m_regions.reserve(count);
     for (int i = 1; i <= count; ++i) {
@@ -946,7 +1077,10 @@ void KcmKTile::load()
     Q_EMIT openSettingsShortcutChanged();
     Q_EMIT moveToNextScreenShortcutChanged();
     Q_EMIT openRegionPickerShortcutChanged();
+    Q_EMIT openDrawRegionShortcutChanged();
     Q_EMIT regionPickerOverlayOpacityChanged();
+    Q_EMIT drawRegionOverlayOpacityChanged();
+    Q_EMIT drawRegionShowGridLinesChanged();
     Q_EMIT regionPickerShowHeaderChanged();
     updateRepresentsDefaults();
     setNeedsSave(false);
@@ -979,7 +1113,10 @@ void KcmKTile::save()
     g.writeEntry(QStringLiteral("openSettingsShortcut"), normalizeShortcutSequence(m_openSettingsShortcut));
     g.writeEntry(QStringLiteral("moveToNextScreenShortcut"), normalizeShortcutSequence(m_moveToNextScreenShortcut));
     g.writeEntry(QStringLiteral("openRegionPickerShortcut"), normalizeShortcutSequence(m_openRegionPickerShortcut));
+    g.writeEntry(QStringLiteral("openDrawRegionShortcut"), normalizeShortcutSequence(m_openDrawRegionShortcut));
     g.writeEntry(QStringLiteral("regionPickerOverlayOpacity"), m_regionPickerOverlayOpacity);
+    g.writeEntry(QStringLiteral("drawRegionOverlayOpacity"), m_drawRegionOverlayOpacity);
+    g.writeEntry(QStringLiteral("drawRegionShowGridLines"), m_drawRegionShowGridLines);
     g.writeEntry(QStringLiteral("regionPickerShowHeader"), m_regionPickerShowHeader);
     for (int i = 0; i < m_regions.size(); ++i) {
         const int oneBased = i + 1;
@@ -1099,6 +1236,18 @@ void KcmKTile::save()
                         QVariant::fromValue(keys));
                     continue;
                 }
+                if (actionName == QLatin1String("kTile: Draw region on screen")) {
+                    const QList<int> keys = keysListFromShortcutString(m_openDrawRegionShortcut);
+                    if (keys.isEmpty() && !m_openDrawRegionShortcut.isEmpty()) {
+                        qCWarning(KCM_KTILE) << "Could not convert shortcut to key codes for" << actionName
+                                             << "text:" << m_openDrawRegionShortcut;
+                    }
+                    kglobalaccel.call(
+                        QStringLiteral("setForeignShortcut"),
+                        QVariant::fromValue(actionId),
+                        QVariant::fromValue(keys));
+                    continue;
+                }
             }
         }
     }
@@ -1118,7 +1267,10 @@ void KcmKTile::defaults()
     m_openSettingsShortcut.clear();
     m_moveToNextScreenShortcut.clear();
     m_openRegionPickerShortcut.clear();
+    m_openDrawRegionShortcut.clear();
     m_regionPickerOverlayOpacity = kDefaultRegionPickerOverlayOpacity;
+    m_drawRegionOverlayOpacity = kDefaultDrawRegionOverlayOpacity;
+    m_drawRegionShowGridLines = kDefaultDrawRegionShowGridLines;
     m_regionPickerShowHeader = kDefaultRegionPickerShowHeader;
     m_regions.clear();
     m_regions.push_back({defaultRegionForIndex(1), defaultShortcutForIndex(1), -1});
@@ -1127,7 +1279,10 @@ void KcmKTile::defaults()
     Q_EMIT openSettingsShortcutChanged();
     Q_EMIT moveToNextScreenShortcutChanged();
     Q_EMIT openRegionPickerShortcutChanged();
+    Q_EMIT openDrawRegionShortcutChanged();
     Q_EMIT regionPickerOverlayOpacityChanged();
+    Q_EMIT drawRegionOverlayOpacityChanged();
+    Q_EMIT drawRegionShowGridLinesChanged();
     Q_EMIT regionPickerShowHeaderChanged();
     setNeedsSave(true);
     updateRepresentsDefaults();
@@ -1143,7 +1298,8 @@ void KcmKTile::onGlobalShortcutChanged(const QStringList &actionId, const QList<
     static const QRegularExpression regionActionRe(QStringLiteral("^kTile: region (\\d+)$"));
     if (!regionActionRe.match(actionName).hasMatch() && actionName != QLatin1String("kTile: Open settings")
         && actionName != QLatin1String("kTile: Move window to next screen")
-        && actionName != QLatin1String("kTile: Open region picker")) {
+        && actionName != QLatin1String("kTile: Open region picker")
+        && actionName != QLatin1String("kTile: Draw region on screen")) {
         return;
     }
     // Do not overwrite in-progress unsaved edits in this KCM.

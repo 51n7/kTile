@@ -600,7 +600,7 @@ function applyGapToClippedRect(rect, wa, gap) {
     return { x: x, y: y, w: w, h: h };
 }
 
-/** Session-helper region picker overlay; must not be tiled by kTile shortcuts. */
+/** Session-helper overlays; must not be tiled by kTile shortcuts. */
 function isKTilePickerWindow(wnd) {
     if (!wnd) {
         return false;
@@ -608,6 +608,9 @@ function isKTilePickerWindow(wnd) {
     try {
         const caption = String(wnd.caption || "");
         if (caption.indexOf("kTile Region Picker") >= 0) {
+            return true;
+        }
+        if (caption.indexOf("kTile Draw Region") >= 0) {
             return true;
         }
         const windowClass = String(wnd.windowClass || "");
@@ -664,11 +667,10 @@ function applyFrameGeometry(wnd, x, y, width, height) {
 }
 
 /**
- * Percentages (0–100) of the active window's FullScreenArea, using the same
- * math as legacy ui/main.qml tileWindow() with gap.
+ * Percentages (0–100) of a tiling basis rect in global coordinates (with gap).
+ * screen: { x, y, w, h } — usually FullScreenArea for the window's head.
  */
-function snapActivePercentFromConfig(configKey, defaultSpec) {
-    const wnd = workspace.activeWindow;
+function snapActivePercentSpecForWindowOnBasis(wnd, spec, screen) {
     if (!wnd) {
         return;
     }
@@ -678,34 +680,206 @@ function snapActivePercentFromConfig(configKey, defaultSpec) {
     if (isKTilePickerWindow(wnd)) {
         return;
     }
-    const spec = readConfig(configKey, defaultSpec);
     const r = parseRect(spec);
     if (!r.ok) {
         print("kTile:", r.err, "raw:", spec);
         return;
     }
-    const ri = regionOneBasedFromConfigKey(configKey);
-    const displayIdx = ri > 0 ? displayIndexForRegionOneBased(ri) : -1;
-    sendWindowToConfiguredDisplay(wnd, displayIdx);
+    if (!screen) {
+        print("kTile: no screen area for percent snap; spec:", spec);
+        return;
+    }
     const xPct = r.x;
     const yPct = r.y;
     const wPct = r.w;
     const hPct = r.h;
-    const screen = readPercentTilingBasisRect(wnd, displayIdx);
-    if (!screen) {
-        print("kTile: no screen area for window;", configKey);
-        return;
-    }
     const G = Math.max(0, Number(readConfig("gridGap", 0)) || 0);
     const newW = (wPct / 100) * (screen.w - G) - G;
     const newH = (hPct / 100) * (screen.h - G) - G;
     const newX = (xPct / 100) * (screen.w - G) + G + screen.x;
     const newY = (yPct / 100) * (screen.h - G) + G + screen.y;
     if (newW < 1 || newH < 1) {
-        print("kTile: computed size too small;", configKey, newW, newH);
+        print("kTile: computed size too small; spec:", spec, newW, newH);
         return;
     }
     applyFrameGeometry(wnd, newX, newY, newW, newH);
+}
+
+/**
+ * Percentages (0–100) of the active window's FullScreenArea, using the same
+ * math as legacy ui/main.qml tileWindow() with gap.
+ */
+function snapActivePercentSpecForWindow(wnd, spec, displayIdx) {
+    const idx = displayIdx != null ? displayIdx : -1;
+    sendWindowToConfiguredDisplay(wnd, idx);
+    const screen = readPercentTilingBasisRect(wnd, idx);
+    snapActivePercentSpecForWindowOnBasis(wnd, spec, screen);
+}
+
+function snapActivePercentSpec(spec, displayIdx) {
+    snapActivePercentSpecForWindow(workspace.activeWindow, spec, displayIdx);
+}
+
+function snapActivePercentFromConfig(configKey, defaultSpec) {
+    const spec = readConfig(configKey, defaultSpec);
+    const ri = regionOneBasedFromConfigKey(configKey);
+    const displayIdx = ri > 0 ? displayIndexForRegionOneBased(ri) : -1;
+    snapActivePercentSpecForWindow(workspace.activeWindow, spec, displayIdx);
+}
+
+/** Window to snap when draw-region overlay closes (captured when overlay opens). */
+let drawRegionTargetWindow = null;
+/** Percent basis captured when draw-region opens (overlay geometry). */
+let drawRegionTilingBasisCache = null;
+
+function normalizeInternalId(id) {
+    return String(id || "").replace(/[{}]/g, "").trim().toLowerCase();
+}
+
+function windowListsForScan() {
+    const lists = [];
+    if (typeof workspace.windowList === "function") {
+        lists.push(workspace.windowList());
+    }
+    if (typeof workspace.clientList === "function") {
+        lists.push(workspace.clientList());
+    }
+    return lists;
+}
+
+function findWindowByInternalId(internalId) {
+    const want = normalizeInternalId(internalId);
+    if (!want) {
+        return null;
+    }
+    const lists = windowListsForScan();
+    for (let li = 0; li < lists.length; li++) {
+        const list = lists[li];
+        if (!list) {
+            continue;
+        }
+        for (let i = 0; i < list.length; i++) {
+            const w = list[i];
+            if (w && normalizeInternalId(w.internalId) === want) {
+                return w;
+            }
+        }
+    }
+    return null;
+}
+
+function windowForDrawRegionSnap() {
+    const storedInternal = String(readConfig("drawRegionTargetInternalId", "") || "").trim();
+    if (storedInternal) {
+        const byInternal = findWindowByInternalId(storedInternal);
+        if (byInternal && byInternal.normalWindow && !isKTilePickerWindow(byInternal)) {
+            return byInternal;
+        }
+    }
+    if (drawRegionTargetWindow && drawRegionTargetWindow.normalWindow &&
+        !isKTilePickerWindow(drawRegionTargetWindow)) {
+        return drawRegionTargetWindow;
+    }
+    const active = workspace.activeWindow;
+    if (active && active.normalWindow && !isKTilePickerWindow(active)) {
+        return active;
+    }
+    return null;
+}
+
+function snapPayloadValue(snap, key) {
+    if (!snap) {
+        return undefined;
+    }
+    if (snap[key] !== undefined) {
+        return snap[key];
+    }
+    return snap[String(key)];
+}
+
+function applyDrawRegionSnapPayload(snap) {
+    if (!snap || typeof snap !== "object") {
+        return false;
+    }
+    const spec = String(snapPayloadValue(snap, "spec") || "").trim();
+    const internalId = String(snapPayloadValue(snap, "internalId") || "").trim();
+    let wnd = null;
+    if (internalId) {
+        wnd = findWindowByInternalId(internalId);
+    }
+    if (!wnd) {
+        wnd = windowForDrawRegionSnap();
+    }
+    drawRegionTargetWindow = null;
+    drawRegionTilingBasisCache = null;
+    if (!wnd) {
+        print("kTile: draw region snap — no target window");
+        return false;
+    }
+    try {
+        if (typeof wnd.activate === "function") {
+            wnd.activate();
+        }
+    } catch (e) {
+        // Best-effort.
+    }
+    const hasFrame = snapPayloadValue(snap, "hasFrame") === true ||
+        String(snapPayloadValue(snap, "hasFrame")).toLowerCase() === "true";
+    if (hasFrame) {
+        const frameX = Number(snapPayloadValue(snap, "frameX"));
+        const frameY = Number(snapPayloadValue(snap, "frameY"));
+        const frameW = Number(snapPayloadValue(snap, "frameW"));
+        const frameH = Number(snapPayloadValue(snap, "frameH"));
+        if ([frameX, frameY, frameW, frameH].every(function (n) { return isFinite(n); }) &&
+            frameW > 0 && frameH > 0) {
+            applyFrameGeometry(wnd, frameX, frameY, frameW, frameH);
+            return true;
+        }
+    }
+    if (spec) {
+        snapActivePercentSpecForWindow(wnd, spec, -1);
+        return true;
+    }
+    return false;
+}
+
+function snapActiveToDrawnRegionFromConfig() {
+    const spec = readConfig("drawRegionSnap", "");
+    if (!String(spec).trim()) {
+        return;
+    }
+    const snap = {
+        spec: spec,
+        internalId: String(readConfig("drawRegionTargetInternalId", "") || ""),
+        hasFrame: false
+    };
+    const frameSpec = String(readConfig("drawRegionFrame", "") || "").trim();
+    if (frameSpec) {
+        const frame = parseRect(frameSpec);
+        if (frame.ok && frame.w > 0 && frame.h > 0) {
+            snap.hasFrame = true;
+            snap.frameX = frame.x;
+            snap.frameY = frame.y;
+            snap.frameW = frame.w;
+            snap.frameH = frame.h;
+        }
+    }
+    applyDrawRegionSnapPayload(snap);
+}
+
+function snapActiveToDrawnRegion() {
+    callDBus(
+        "org.kde.ktile",
+        "/KTile",
+        "org.kde.ktile.KTile",
+        "fetchDrawRegionSnap",
+        function (snap) {
+            if (applyDrawRegionSnapPayload(snap)) {
+                return;
+            }
+            snapActiveToDrawnRegionFromConfig();
+        }
+    );
 }
 
 /** Legacy global-pixel regions (clip + optional clamp to work area). */
@@ -779,8 +953,11 @@ function configuredRegionCount() {
 
 function normalizeShortcut(sequence) {
     let s = String(sequence || "").trim();
-    if (s === "") {
-        return s;
+    if (s === "" || /^none(,none)?$/i.test(s) || s === ", ,none") {
+        return "";
+    }
+    while (s.endsWith(",,") && s.indexOf("+") >= 0) {
+        s = s.slice(0, -1);
     }
     // Canonicalize aliases to "/" form.
     s = s.replace(/\+Slash/gi, "+/");
@@ -832,11 +1009,67 @@ function openRegionPickerViaDBus() {
     );
 }
 
+function openDrawRegionViaDBus() {
+    const wnd = workspace.activeWindow;
+    drawRegionTilingBasisCache = null;
+    drawRegionTargetWindow = null;
+    let internalId = "";
+    if (wnd && wnd.normalWindow && !isKTilePickerWindow(wnd)) {
+        drawRegionTargetWindow = wnd;
+        try {
+            internalId = String(wnd.internalId || "");
+        } catch (e) {
+            internalId = "";
+        }
+        const basis = readPercentTilingBasisRect(wnd, -1);
+        if (basis) {
+            drawRegionTilingBasisCache = basis;
+            callDBus(
+                "org.kde.ktile",
+                "/KTile",
+                "org.kde.ktile.KTile",
+                "prepareDrawRegion",
+                internalId,
+                Math.round(basis.x),
+                Math.round(basis.y),
+                Math.round(basis.w),
+                Math.round(basis.h)
+            );
+            return;
+        }
+        callDBus(
+            "org.kde.ktile",
+            "/KTile",
+            "org.kde.ktile.KTile",
+            "prepareDrawRegion",
+            internalId,
+            -1,
+            -1,
+            -1,
+            -1
+        );
+        return;
+    }
+    callDBus(
+        "org.kde.ktile",
+        "/KTile",
+        "org.kde.ktile.KTile",
+        "prepareDrawRegion",
+        "",
+        -1,
+        -1,
+        -1,
+        -1
+    );
+}
+
 function kTileGlobalActionNames() {
     const names = [
         "kTile: Open settings",
         "kTile: Move window to next screen",
         "kTile: Open region picker",
+        "kTile: Draw region on screen",
+        "kTile: Apply drawn region",
         "kTile: Close region picker"
     ];
     for (let i = 1; i <= 32; ++i) {
@@ -943,6 +1176,32 @@ function registerAllKTileShortcuts() {
         );
         if (!ok) {
             print("kTile: failed to register Open region picker shortcut, value:", shortcut);
+        }
+    }
+
+    {
+        const configured = readConfig("openDrawRegionShortcut", "");
+        const shortcut = normalizeShortcut(configured);
+        const ok = registerShortcut(
+            "kTile: Draw region on screen",
+            "kTile: Draw region on screen",
+            shortcut,
+            openDrawRegionViaDBus
+        );
+        if (!ok) {
+            print("kTile: failed to register Draw region on screen shortcut, value:", shortcut);
+        }
+    }
+
+    {
+        const ok = registerShortcut(
+            "kTile: Apply drawn region",
+            "kTile: Apply drawn region",
+            "",
+            snapActiveToDrawnRegion
+        );
+        if (!ok) {
+            print("kTile: failed to register Apply drawn region shortcut");
         }
     }
 }

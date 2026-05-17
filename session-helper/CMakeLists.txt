@@ -2,6 +2,8 @@
 
 qt_add_executable(ktile-session-helper
     main.cpp
+    drawregioncontroller.cpp
+    drawregioncontroller.h
     regionpickercontroller.cpp
     regionpickercontroller.h
     qml.qrc

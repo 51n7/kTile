@@ -34,6 +34,9 @@ KCMUtils.SimpleKCM {
             QQC2.TabButton {
                 text: "General"
             }
+            QQC2.TabButton {
+                text: "Draw Region"
+            }
         }
     }
 
@@ -56,8 +59,11 @@ KCMUtils.SimpleKCM {
 
     function normalizeShortcutText(sequence) {
         let s = String(sequence || "").trim()
-        if (!s) {
+        if (!s || /^none(,none)?$/i.test(s) || s === ", ,none") {
             return ""
+        }
+        while (s.endsWith(",,") && s.includes("+")) {
+            s = s.slice(0, -1)
         }
         s = s.replace(/\+Slash/gi, "+/")
         s = s.replace(/\+Question/gi, "+?")
@@ -206,18 +212,15 @@ KCMUtils.SimpleKCM {
                 }
                 spacing: Kirigami.Units.largeSpacing
 
-                Item {
+                StackLayout {
                     id: ktileTabStack
                     Layout.fillWidth: true
-                    implicitHeight: ktileTabBar.currentIndex === 0 ? regionsTabColumn.implicitHeight : generalTabColumn.implicitHeight
+                    currentIndex: ktileTabBar.currentIndex
+                    clip: true
 
                     ColumnLayout {
                         id: regionsTabColumn
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.top: parent.top
-                        width: parent.width
-                        visible: ktileTabBar.currentIndex === 0
+                        Layout.fillWidth: true
                         spacing: Kirigami.Units.largeSpacing
 
                 Item {
@@ -467,16 +470,11 @@ KCMUtils.SimpleKCM {
                     }
                 }
                 }
-
                     }
 
                     ColumnLayout {
                         id: generalTabColumn
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.top: parent.top
-                        width: parent.width
-                        visible: ktileTabBar.currentIndex === 1
+                        Layout.fillWidth: true
                         spacing: Kirigami.Units.largeSpacing
 
                         RowLayout {
@@ -612,7 +610,7 @@ KCMUtils.SimpleKCM {
 
                             QQC2.Label {
                                 Layout.alignment: Qt.AlignVCenter
-                                text: "Move window to next screen"
+                                text: "Move window to next screen:"
                             }
 
                             Item {
@@ -682,6 +680,107 @@ KCMUtils.SimpleKCM {
                                 wrapMode: Text.Wrap
                                 text: "Settings imported successfully."
                                 color: Kirigami.Theme.positiveTextColor
+                            }
+                        }
+                    }
+
+                    ColumnLayout {
+                        id: drawRegionTabColumn
+                        Layout.fillWidth: true
+                        spacing: Kirigami.Units.largeSpacing
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: Kirigami.Units.smallSpacing
+
+                            QQC2.Label {
+                                Layout.alignment: Qt.AlignVCenter
+                                text: "Draw region on screen:"
+                            }
+
+                            Item {
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: Kirigami.Units.gridUnit * 2
+                            }
+
+                            KeySequenceItem {
+                                Layout.alignment: Qt.AlignVCenter
+                                keySequence: kcm ? kcm.openDrawRegionShortcut : ""
+                                onKeySequenceModified: {
+                                    if (!kcm) {
+                                        return
+                                    }
+                                    const normalized = ktileRoot.normalizeShortcutText(keySequence)
+                                    kcm.openDrawRegionShortcut = normalized.length > 0 ? normalized : ""
+                                }
+                            }
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: Kirigami.Units.smallSpacing
+
+                            QQC2.Label {
+                                Layout.alignment: Qt.AlignVCenter
+                                text: "Draw Region Overlay Opacity:"
+                            }
+
+                            Item {
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: Kirigami.Units.gridUnit * 2
+                            }
+
+                            QQC2.Slider {
+                                id: drawRegionOpacitySlider
+                                Layout.alignment: Qt.AlignVCenter
+                                Layout.preferredWidth: Kirigami.Units.gridUnit * 14
+                                from: 0
+                                to: 100
+                                stepSize: 5
+                                live: true
+                                enabled: kcm !== null
+                                value: kcm ? Math.round(kcm.drawRegionOverlayOpacity * 100) : 30
+                                onMoved: {
+                                    if (kcm) {
+                                        kcm.drawRegionOverlayOpacity = value / 100
+                                    }
+                                }
+                                onPressedChanged: {
+                                    if (!pressed && kcm) {
+                                        kcm.drawRegionOverlayOpacity = value / 100
+                                    }
+                                }
+                            }
+
+                            QQC2.Label {
+                                Layout.alignment: Qt.AlignVCenter
+                                text: kcm ? (Math.round(kcm.drawRegionOverlayOpacity * 100) + "%") : "30%"
+                            }
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: Kirigami.Units.smallSpacing
+
+                            QQC2.Label {
+                                Layout.alignment: Qt.AlignVCenter
+                                text: "Show grid lines:"
+                            }
+
+                            Item {
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: Kirigami.Units.gridUnit * 2
+                            }
+
+                            QQC2.CheckBox {
+                                Layout.alignment: Qt.AlignVCenter
+                                enabled: kcm !== null
+                                checked: kcm ? kcm.drawRegionShowGridLines : false
+                                onToggled: {
+                                    if (kcm) {
+                                        kcm.drawRegionShowGridLines = checked
+                                    }
+                                }
                             }
                         }
                     }

@@ -3,5 +3,7 @@
     <qresource prefix="/">
         <file>qml/RegionPicker.qml</file>
         <file>qml/RegionBlock.qml</file>
+        <file>qml/DrawRegionOverlay.qml</file>
+        <file>qml/DrawRegionGrid.qml</file>
     </qresource>
 </RCC>

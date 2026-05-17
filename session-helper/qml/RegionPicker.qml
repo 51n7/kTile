@@ -5,6 +5,7 @@ import QtQuick.Layouts
 
 Window {
     id: pickerWindow
+    objectName: "ktileRegionPickerWindow"
 
     property var controller: pickerController
 

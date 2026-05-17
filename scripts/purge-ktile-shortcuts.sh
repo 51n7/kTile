@@ -8,6 +8,8 @@ NAMES=(
     "kTile: Open settings"
     "kTile: Move window to next screen"
     "kTile: Open region picker"
+    "kTile: Draw region on screen"
+    "kTile: Apply drawn region"
     "kTile: Close region picker"
 )
 for i in $(seq 1 32); do

@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 /**
- * D-Bus service for kTile: open KCM settings and show the region picker overlay.
+ * D-Bus service for kTile: open KCM settings, region picker, and draw-region overlay.
  * Global shortcuts are registered by the KWin script; it invokes these methods via callDBus.
  */
 
+#include "drawregioncontroller.h"
 #include "regionpickercontroller.h"
 
 #include <QCoreApplication>
@@ -25,12 +26,13 @@
 #include <QEvent>
 #include <QKeyEvent>
 #include <QQuickWindow>
-#include <QPoint>
 #include <QRect>
 #include <QSize>
 #include <QStandardPaths>
 #include <QTextStream>
 #include <QTimer>
+
+#include <functional>
 
 namespace
 {
@@ -126,15 +128,15 @@ bool startDetachedWithSessionEnv(const QString &program, const QStringList &args
     return ok;
 }
 
-class PickerEscapeFilter : public QObject
+class OverlayEscapeFilter : public QObject
 {
     Q_OBJECT
 
 public:
-    PickerEscapeFilter(RegionPickerController *controller, QQuickWindow *window, QObject *parent = nullptr)
+    OverlayEscapeFilter(QQuickWindow *window, std::function<void()> onEscape, QObject *parent = nullptr)
         : QObject(parent)
-        , m_controller(controller)
         , m_window(window)
+        , m_onEscape(std::move(onEscape))
     {
     }
 
@@ -149,15 +151,17 @@ protected:
         }
         const auto *keyEvent = static_cast<QKeyEvent *>(event);
         if (keyEvent->key() == Qt::Key_Escape || keyEvent->key() == Qt::Key_Cancel) {
-            m_controller->closePicker();
+            if (m_onEscape) {
+                m_onEscape();
+            }
             return true;
         }
         return false;
     }
 
 private:
-    RegionPickerController *m_controller = nullptr;
     QPointer<QQuickWindow> m_window;
+    std::function<void()> m_onEscape;
 };
 
 namespace
@@ -174,19 +178,34 @@ void focusEscapeTrap(QQuickWindow *window)
     }
 }
 
-void resetPickerShellGeometry(QQuickWindow *window)
+QRect virtualDesktopGeometry()
+{
+    const QList<QScreen *> screens = QGuiApplication::screens();
+    if (screens.isEmpty()) {
+        return QRect(0, 0, 1920, 1080);
+    }
+    QRect u = screens.constFirst()->geometry();
+    for (int i = 1; i < screens.size(); ++i) {
+        u = u.united(screens.at(i)->geometry());
+    }
+    return u;
+}
+
+void resetOverlayShellGeometry(QQuickWindow *window, bool useVirtualDesktop)
 {
     if (!window) {
         return;
     }
-    QScreen *screen = QGuiApplication::primaryScreen();
-    if (!screen) {
-        return;
+    QRect geom;
+    if (useVirtualDesktop) {
+        geom = virtualDesktopGeometry();
+    } else {
+        QScreen *screen = QGuiApplication::primaryScreen();
+        geom = screen ? screen->availableGeometry() : virtualDesktopGeometry();
     }
-    const QRect available = screen->availableGeometry();
     window->setMinimumSize(QSize(0, 0));
     window->setMaximumSize(QSize(16777215, 16777215));
-    window->setGeometry(available);
+    window->setGeometry(geom);
 }
 }
 
@@ -220,13 +239,18 @@ public:
         if (!m_window) {
             m_engine->rootContext()->setContextProperty(QStringLiteral("pickerController"), m_controller);
             m_engine->load(QUrl(QStringLiteral("qrc:/qml/RegionPicker.qml")));
-            if (m_engine->rootObjects().isEmpty()) {
+            for (QObject *root : m_engine->rootObjects()) {
+                if (root->objectName() == QLatin1String("ktileRegionPickerWindow")) {
+                    m_window = qobject_cast<QQuickWindow *>(root);
+                    break;
+                }
+            }
+            if (!m_window) {
                 logLine(QStringLiteral("showPicker: failed to load RegionPicker.qml"));
                 return;
             }
-            m_window = qobject_cast<QQuickWindow *>(m_engine->rootObjects().constFirst());
             if (m_window) {
-                m_escapeFilter = new PickerEscapeFilter(m_controller, m_window, m_window);
+                m_escapeFilter = new OverlayEscapeFilter(m_window, [this]() { m_controller->closePicker(); }, m_window);
                 m_window->installEventFilter(m_escapeFilter);
             }
         }
@@ -236,7 +260,7 @@ public:
             return;
         }
 
-        resetPickerShellGeometry(m_window);
+        resetOverlayShellGeometry(m_window, false);
         m_window->show();
         m_window->raise();
         m_window->requestActivate();
@@ -257,15 +281,120 @@ private:
     QPointer<QObject> m_escapeFilter;
 };
 
+class DrawRegionHost : public QObject
+{
+    Q_OBJECT
+
+public:
+    explicit DrawRegionHost(QQmlApplicationEngine *engine, QObject *parent = nullptr)
+        : QObject(parent)
+        , m_engine(engine)
+        , m_controller(new DrawRegionController(this))
+    {
+        connect(m_controller, &DrawRegionController::requestClose, this, &DrawRegionHost::hideOverlay);
+    }
+
+    bool isOverlayVisible() const
+    {
+        return m_window && m_window->isVisible();
+    }
+
+    void setTargetWindowInternalId(const QString &internalId)
+    {
+        m_controller->setTargetWindowInternalId(internalId);
+    }
+
+    void setDrawRegionTilingBasis(int x, int y, int width, int height)
+    {
+        m_controller->setDrawRegionTilingBasis(x, y, width, height);
+    }
+
+    void prepareDrawRegion(const QString &internalId, int x, int y, int width, int height)
+    {
+        m_controller->setTargetWindowInternalId(internalId);
+        if (width > 0 && height > 0) {
+            m_controller->setDrawRegionTilingBasis(x, y, width, height);
+        }
+        QMetaObject::invokeMethod(this, "showOverlay", Qt::QueuedConnection);
+    }
+
+    QVariantMap fetchDrawRegionSnap()
+    {
+        return m_controller->takePendingDrawRegionSnap();
+    }
+
+public Q_SLOTS:
+    void showOverlay()
+    {
+        if (!m_engine) {
+            return;
+        }
+
+        m_controller->reloadFromConfig();
+
+        if (!m_window) {
+            m_engine->rootContext()->setContextProperty(QStringLiteral("drawRegionController"), m_controller);
+            m_engine->load(QUrl(QStringLiteral("qrc:/qml/DrawRegionOverlay.qml")));
+            for (QObject *root : m_engine->rootObjects()) {
+                if (root->objectName() == QLatin1String("ktileDrawRegionWindow")) {
+                    m_window = qobject_cast<QQuickWindow *>(root);
+                    break;
+                }
+            }
+            if (!m_window) {
+                logLine(QStringLiteral("showDrawRegion: failed to load DrawRegionOverlay.qml"));
+                return;
+            }
+            if (m_window) {
+                m_escapeFilter =
+                    new OverlayEscapeFilter(m_window, [this]() { m_controller->closeOverlay(); }, m_window);
+                m_window->installEventFilter(m_escapeFilter);
+            }
+        }
+
+        if (!m_window) {
+            logLine(QStringLiteral("showDrawRegion: root object is not a window"));
+            return;
+        }
+
+        const QRect basis = m_controller->tilingBasisRect();
+        if (basis.isValid()) {
+            m_window->setMinimumSize(QSize(0, 0));
+            m_window->setMaximumSize(QSize(16777215, 16777215));
+            m_window->setGeometry(basis);
+        } else {
+            resetOverlayShellGeometry(m_window, false);
+        }
+        m_window->show();
+        m_window->raise();
+        m_window->requestActivate();
+        focusEscapeTrap(m_window);
+    }
+
+    void hideOverlay()
+    {
+        if (m_window) {
+            m_window->hide();
+        }
+    }
+
+private:
+    QQmlApplicationEngine *m_engine = nullptr;
+    QPointer<DrawRegionController> m_controller;
+    QPointer<QQuickWindow> m_window;
+    QPointer<QObject> m_escapeFilter;
+};
+
 class KTileAdaptor : public QDBusAbstractAdaptor
 {
     Q_OBJECT
     Q_CLASSINFO("D-Bus Interface", "org.kde.ktile.KTile")
 
 public:
-    explicit KTileAdaptor(RegionPickerHost *pickerHost, QObject *parent)
+    explicit KTileAdaptor(RegionPickerHost *pickerHost, DrawRegionHost *drawRegionHost, QObject *parent)
         : QDBusAbstractAdaptor(parent)
         , m_pickerHost(pickerHost)
+        , m_drawRegionHost(drawRegionHost)
     {
     }
 
@@ -314,8 +443,56 @@ public Q_SLOTS:
         }
     }
 
+    void prepareDrawRegion(const QString &internalId, int x, int y, int width, int height)
+    {
+        logLine(QStringLiteral("DBus prepareDrawRegion() target=%1 basis=%2,%3 %4x%5")
+                    .arg(internalId)
+                    .arg(x)
+                    .arg(y)
+                    .arg(width)
+                    .arg(height));
+        if (m_drawRegionHost) {
+            m_drawRegionHost->prepareDrawRegion(internalId, x, y, width, height);
+        }
+    }
+
+    QVariantMap fetchDrawRegionSnap()
+    {
+        if (!m_drawRegionHost) {
+            return {};
+        }
+        const QVariantMap snap = m_drawRegionHost->fetchDrawRegionSnap();
+        logLine(QStringLiteral("DBus fetchDrawRegionSnap() keys=%1").arg(snap.keys().join(QLatin1Char(','))));
+        return snap;
+    }
+
+    void setDrawRegionTilingBasis(int x, int y, int width, int height)
+    {
+        logLine(QStringLiteral("DBus setDrawRegionTilingBasis() %1,%2 %3x%4").arg(x).arg(y).arg(width).arg(height));
+        if (m_drawRegionHost) {
+            m_drawRegionHost->setDrawRegionTilingBasis(x, y, width, height);
+        }
+    }
+
+    void showDrawRegion()
+    {
+        logLine(QStringLiteral("DBus showDrawRegion() invoked"));
+        if (m_drawRegionHost) {
+            QMetaObject::invokeMethod(m_drawRegionHost, "showOverlay", Qt::QueuedConnection);
+        }
+    }
+
+    void closeDrawRegion()
+    {
+        logLine(QStringLiteral("DBus closeDrawRegion() invoked"));
+        if (m_drawRegionHost && m_drawRegionHost->isOverlayVisible()) {
+            QMetaObject::invokeMethod(m_drawRegionHost, &DrawRegionHost::hideOverlay, Qt::QueuedConnection);
+        }
+    }
+
 private:
     RegionPickerHost *m_pickerHost = nullptr;
+    DrawRegionHost *m_drawRegionHost = nullptr;
 };
 }
 
@@ -328,9 +505,10 @@ int main(int argc, char **argv)
 
     QQmlApplicationEngine engine;
     RegionPickerHost pickerHost(&engine);
+    DrawRegionHost drawRegionHost(&engine);
 
     QObject root;
-    new KTileAdaptor(&pickerHost, &root);
+    new KTileAdaptor(&pickerHost, &drawRegionHost, &root);
 
     QDBusConnection bus = QDBusConnection::sessionBus();
     if (!bus.registerService(QStringLiteral("org.kde.ktile"))) {
