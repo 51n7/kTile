@@ -794,23 +794,6 @@ function normalizeShortcut(sequence) {
     return s;
 }
 
-for (let i = 1; i <= configuredRegionCount(); ++i) {
-    const index = i;
-    const configured = readConfig("shortcut" + index, defaultShortcutForIndex(index));
-    const shortcut = normalizeShortcut(configured);
-    const registered = registerShortcut(
-        "kTile: region " + index,
-        "kTile: region " + index,
-        shortcut,
-        function () {
-            snapActiveToRectFromConfig("region" + index, defaultRegionForIndex(index));
-        }
-    );
-    if (!registered) {
-        print("kTile: failed to register shortcut for region", index, "value:", shortcut);
-    }
-}
-
 function openKTileSettingsViaDBus() {
     callDBus(
         "org.kde.ktile",
@@ -840,36 +823,6 @@ function moveActiveWindowToNextScreen() {
     }
 }
 
-{
-    const configured = readConfig("openSettingsShortcut", "");
-    const shortcut = normalizeShortcut(configured);
-    const ok = registerShortcut(
-        "kTile: Open settings",
-        "kTile: Open settings",
-        shortcut,
-        function () {
-            openKTileSettingsViaDBus();
-        }
-    );
-    if (!ok) {
-        print("kTile: failed to register Open settings shortcut, value:", shortcut);
-    }
-}
-
-{
-    const configured = readConfig("moveToNextScreenShortcut", "");
-    const shortcut = normalizeShortcut(configured);
-    const ok = registerShortcut(
-        "kTile: Move window to next screen",
-        "kTile: Move window to next screen",
-        shortcut,
-        moveActiveWindowToNextScreen
-    );
-    if (!ok) {
-        print("kTile: failed to register Move window to next screen shortcut, value:", shortcut);
-    }
-}
-
 function openRegionPickerViaDBus() {
     callDBus(
         "org.kde.ktile",
@@ -879,17 +832,126 @@ function openRegionPickerViaDBus() {
     );
 }
 
-{
-    const configured = readConfig("openRegionPickerShortcut", "");
-    const shortcut = normalizeShortcut(configured);
-    const ok = registerShortcut(
+function kTileGlobalActionNames() {
+    const names = [
+        "kTile: Open settings",
+        "kTile: Move window to next screen",
         "kTile: Open region picker",
-        "kTile: Open region picker",
-        shortcut,
-        openRegionPickerViaDBus
+        "kTile: Close region picker"
+    ];
+    for (let i = 1; i <= 32; ++i) {
+        names.push("kTile: region " + i);
+    }
+    return names;
+}
+
+function unregisterKTileGlobalAction(name, done) {
+    callDBus(
+        "org.kde.kglobalaccel",
+        "/kglobalaccel",
+        "org.kde.KGlobalAccel",
+        "unregister",
+        "kwin",
+        name,
+        done
     );
-    if (!ok) {
-        print("kTile: failed to register Open region picker shortcut, value:", shortcut);
+}
+
+function unregisterAllKTileGlobalActions(done) {
+    const names = kTileGlobalActionNames();
+    let index = 0;
+    function next() {
+        if (index >= names.length) {
+            if (done) {
+                done();
+            }
+            return;
+        }
+        const name = names[index];
+        index += 1;
+        unregisterKTileGlobalAction(name, next);
+    }
+    next();
+}
+
+function cleanUpKwinGlobalShortcuts(done) {
+    callDBus(
+        "org.kde.kglobalaccel",
+        "/component/kwin",
+        "org.kde.kglobalaccel.Component",
+        "cleanUp",
+        done
+    );
+}
+
+function registerAllKTileShortcuts() {
+    for (let i = 1; i <= configuredRegionCount(); ++i) {
+        const index = i;
+        const configured = readConfig("shortcut" + index, defaultShortcutForIndex(index));
+        const shortcut = normalizeShortcut(configured);
+        const registered = registerShortcut(
+            "kTile: region " + index,
+            "kTile: region " + index,
+            shortcut,
+            function () {
+                snapActiveToRectFromConfig("region" + index, defaultRegionForIndex(index));
+            }
+        );
+        if (!registered) {
+            print("kTile: failed to register shortcut for region", index, "value:", shortcut);
+        }
+    }
+
+    {
+        const configured = readConfig("openSettingsShortcut", "");
+        const shortcut = normalizeShortcut(configured);
+        const ok = registerShortcut(
+            "kTile: Open settings",
+            "kTile: Open settings",
+            shortcut,
+            function () {
+                openKTileSettingsViaDBus();
+            }
+        );
+        if (!ok) {
+            print("kTile: failed to register Open settings shortcut, value:", shortcut);
+        }
+    }
+
+    {
+        const configured = readConfig("moveToNextScreenShortcut", "");
+        const shortcut = normalizeShortcut(configured);
+        const ok = registerShortcut(
+            "kTile: Move window to next screen",
+            "kTile: Move window to next screen",
+            shortcut,
+            moveActiveWindowToNextScreen
+        );
+        if (!ok) {
+            print("kTile: failed to register Move window to next screen shortcut, value:", shortcut);
+        }
+    }
+
+    {
+        const configured = readConfig("openRegionPickerShortcut", "");
+        const shortcut = normalizeShortcut(configured);
+        const ok = registerShortcut(
+            "kTile: Open region picker",
+            "kTile: Open region picker",
+            shortcut,
+            openRegionPickerViaDBus
+        );
+        if (!ok) {
+            print("kTile: failed to register Open region picker shortcut, value:", shortcut);
+        }
     }
 }
+
+// KGlobalAccel restores shortcuts from kglobalshortcutsrc at login; registerShortcut()
+// would add a second copy. Drop stale rows first, then register once from kwinrc.
+unregisterAllKTileGlobalActions(function () {
+    cleanUpKwinGlobalShortcuts(function () {
+        registerAllKTileShortcuts();
+    });
+});
 

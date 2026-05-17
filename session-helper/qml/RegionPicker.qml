@@ -112,7 +112,7 @@ Window {
         Rectangle {
             id: backdrop
             anchors.fill: parent
-            color: Qt.rgba(0, 0, 0, 0.55)
+            color: Qt.rgba(0, 0, 0, controller ? controller.overlayOpacity : 0.30)
 
             MouseArea {
                 anchors.fill: parent

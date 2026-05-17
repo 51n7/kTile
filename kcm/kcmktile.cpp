@@ -59,7 +59,13 @@ static constexpr int kGridGapMax = 48;
 static constexpr int kDefaultGridColumns = 8;
 static constexpr int kDefaultGridRows = 6;
 static constexpr int kDefaultGridGap = 0;
+static constexpr qreal kDefaultRegionPickerOverlayOpacity = 0.30;
 static constexpr int kSettingsJsonVersion = 1;
+
+qreal clampRegionPickerOverlayOpacity(qreal value)
+{
+    return std::clamp(value, 0.0, 1.0);
+}
 
 int jsonVersionFromRoot(const QJsonObject &root)
 {
@@ -123,6 +129,84 @@ QList<int> keysListFromShortcutString(const QString &normalized)
         return keys;
     }
     return keys;
+}
+
+bool isKTileKGlobalActionName(const QString &actionName)
+{
+    static const QRegularExpression regionActionRe(QStringLiteral("^kTile: region (\\d+)$"));
+    if (regionActionRe.match(actionName).hasMatch()) {
+        return true;
+    }
+    return actionName == QLatin1String("kTile: Open settings")
+        || actionName == QLatin1String("kTile: Move window to next screen")
+        || actionName == QLatin1String("kTile: Open region picker")
+        || actionName == QLatin1String("kTile: Close region picker");
+}
+
+QList<QStringList> kTileKWinActionIds(QDBusInterface &kglobalaccel)
+{
+    QList<QStringList> ids;
+    if (!kglobalaccel.isValid()) {
+        return ids;
+    }
+    const QDBusReply<QList<QStringList>> actionsReply =
+        kglobalaccel.call(QStringLiteral("allActionsForComponent"), QStringList{QStringLiteral("kwin")});
+    if (!actionsReply.isValid()) {
+        return ids;
+    }
+    for (const QStringList &actionId : actionsReply.value()) {
+        if (actionId.size() >= 2 && isKTileKGlobalActionName(actionId.at(1))) {
+            ids.append(actionId);
+        }
+    }
+    return ids;
+}
+
+void unregisterKTileActionId(QDBusInterface &kglobalaccel, const QStringList &actionId)
+{
+    if (!kglobalaccel.isValid() || actionId.size() < 2) {
+        return;
+    }
+    kglobalaccel.call(QStringLiteral("unRegister"), QVariant::fromValue(actionId));
+    kglobalaccel.call(QStringLiteral("unregister"), QStringLiteral("kwin"), actionId.at(1));
+}
+
+void unregisterAllKTileKWinActions(QDBusInterface &kglobalaccel)
+{
+    const QList<QStringList> ids = kTileKWinActionIds(kglobalaccel);
+    for (const QStringList &actionId : ids) {
+        unregisterKTileActionId(kglobalaccel, actionId);
+    }
+}
+
+int deduplicateKTileKWinActions(QDBusInterface &kglobalaccel)
+{
+    QHash<QString, QList<QStringList>> byName;
+    for (const QStringList &actionId : kTileKWinActionIds(kglobalaccel)) {
+        byName[actionId.at(1)].append(actionId);
+    }
+    int removed = 0;
+    for (auto it = byName.cbegin(); it != byName.cend(); ++it) {
+        const QList<QStringList> &list = it.value();
+        for (int i = 1; i < list.size(); ++i) {
+            unregisterKTileActionId(kglobalaccel, list.at(i));
+            ++removed;
+        }
+    }
+    return removed;
+}
+
+void clearKTileShortcutConfigEntries()
+{
+    KSharedConfig::Ptr shortcutsCfg = KSharedConfig::openConfig(kGlobalShortcutsFile);
+    KConfigGroup kwinShortcuts(shortcutsCfg, QStringLiteral("kwin"));
+    const QStringList keys = kwinShortcuts.keyList();
+    for (const QString &key : keys) {
+        if (key.startsWith(QLatin1String("kTile:"))) {
+            kwinShortcuts.deleteEntry(key);
+        }
+    }
+    shortcutsCfg->sync();
 }
 
 bool waitForKTileKWinActionsRegistered(QDBusInterface &kglobalaccel, int regionCount, int timeoutMs)
@@ -255,6 +339,10 @@ void KcmKTile::updateRepresentsDefaults()
         return;
     }
     if (!m_openRegionPickerShortcut.isEmpty()) {
+        setRepresentsDefaults(false);
+        return;
+    }
+    if (!qFuzzyCompare(m_regionPickerOverlayOpacity + 1.0, kDefaultRegionPickerOverlayOpacity + 1.0)) {
         setRepresentsDefaults(false);
         return;
     }
@@ -424,6 +512,23 @@ void KcmKTile::setOpenRegionPickerShortcut(const QString &value)
     updateRepresentsDefaults();
 }
 
+qreal KcmKTile::regionPickerOverlayOpacity() const
+{
+    return m_regionPickerOverlayOpacity;
+}
+
+void KcmKTile::setRegionPickerOverlayOpacity(qreal value)
+{
+    const qreal v = clampRegionPickerOverlayOpacity(value);
+    if (qFuzzyCompare(m_regionPickerOverlayOpacity, v)) {
+        return;
+    }
+    m_regionPickerOverlayOpacity = v;
+    Q_EMIT regionPickerOverlayOpacityChanged();
+    setNeedsSave(true);
+    updateRepresentsDefaults();
+}
+
 void KcmKTile::connectScreenGeometryUpdates()
 {
     const auto wireScreen = [this](QScreen *screen) {
@@ -566,6 +671,7 @@ QString KcmKTile::exportSettingsJson() const
     root.insert(QStringLiteral("openSettingsShortcut"), normalizeShortcutSequence(m_openSettingsShortcut));
     root.insert(QStringLiteral("moveToNextScreenShortcut"), normalizeShortcutSequence(m_moveToNextScreenShortcut));
     root.insert(QStringLiteral("openRegionPickerShortcut"), normalizeShortcutSequence(m_openRegionPickerShortcut));
+    root.insert(QStringLiteral("regionPickerOverlayOpacity"), m_regionPickerOverlayOpacity);
 
     QJsonArray regionsArr;
     for (const RegionEntry &e : m_regions) {
@@ -659,6 +765,8 @@ QString KcmKTile::importSettingsFromJson(const QString &json)
         normalizeShortcutSequence(root.value(QLatin1String("moveToNextScreenShortcut")).toString());
     m_openRegionPickerShortcut =
         normalizeShortcutSequence(root.value(QLatin1String("openRegionPickerShortcut")).toString());
+    m_regionPickerOverlayOpacity = clampRegionPickerOverlayOpacity(
+        qreal(root.value(QLatin1String("regionPickerOverlayOpacity")).toDouble(kDefaultRegionPickerOverlayOpacity)));
     m_regions = std::move(newRegions);
 
     emitRegionsChanged();
@@ -666,6 +774,7 @@ QString KcmKTile::importSettingsFromJson(const QString &json)
     Q_EMIT openSettingsShortcutChanged();
     Q_EMIT moveToNextScreenShortcutChanged();
     Q_EMIT openRegionPickerShortcutChanged();
+    Q_EMIT regionPickerOverlayOpacityChanged();
     updateRepresentsDefaults();
 
     save();
@@ -717,6 +826,8 @@ void KcmKTile::load()
     m_gridRows =
         std::clamp(g.readEntry(QStringLiteral("gridRows"), kDefaultGridRows), kGridSpanMin, kGridSpanMax);
     m_gridGap = std::clamp(g.readEntry(QStringLiteral("gridGap"), kDefaultGridGap), 0, kGridGapMax);
+    m_regionPickerOverlayOpacity = clampRegionPickerOverlayOpacity(
+        g.readEntry(QStringLiteral("regionPickerOverlayOpacity"), kDefaultRegionPickerOverlayOpacity));
 
     // KWin's script only reads shortcuts from kwinrc (readConfig). Keyboard Shortcuts edits
     // kglobalshortcutsrc. If those diverge, the UI shows the global binding but registerShortcut
@@ -794,12 +905,22 @@ void KcmKTile::load()
         reloadKWinScript();
     }
 
+    QDBusInterface kglobalaccel(
+        QStringLiteral("org.kde.kglobalaccel"),
+        QStringLiteral("/kglobalaccel"),
+        QStringLiteral("org.kde.KGlobalAccel"),
+        QDBusConnection::sessionBus());
+    if (deduplicateKTileKWinActions(kglobalaccel) > 0) {
+        qCWarning(KCM_KTILE) << "Removed duplicate kTile entries from KGlobalAccel.";
+    }
+
     emitRegionsChanged();
     Q_EMIT gridLayoutChanged();
     Q_EMIT virtualGeometryChanged();
     Q_EMIT openSettingsShortcutChanged();
     Q_EMIT moveToNextScreenShortcutChanged();
     Q_EMIT openRegionPickerShortcutChanged();
+    Q_EMIT regionPickerOverlayOpacityChanged();
     updateRepresentsDefaults();
     setNeedsSave(false);
 }
@@ -831,6 +952,7 @@ void KcmKTile::save()
     g.writeEntry(QStringLiteral("openSettingsShortcut"), normalizeShortcutSequence(m_openSettingsShortcut));
     g.writeEntry(QStringLiteral("moveToNextScreenShortcut"), normalizeShortcutSequence(m_moveToNextScreenShortcut));
     g.writeEntry(QStringLiteral("openRegionPickerShortcut"), normalizeShortcutSequence(m_openRegionPickerShortcut));
+    g.writeEntry(QStringLiteral("regionPickerOverlayOpacity"), m_regionPickerOverlayOpacity);
     for (int i = 0; i < m_regions.size(); ++i) {
         const int oneBased = i + 1;
         g.writeEntry(QStringLiteral("region%1").arg(oneBased), m_regions.at(i).region);
@@ -844,46 +966,23 @@ void KcmKTile::save()
     }
     cfg->sync();
 
-    // Clear persisted kTile shortcut entries; KWin script re-registration will
-    // re-create them from Script-org.kde.ktile/shortcutN defaults.
-    KSharedConfig::Ptr shortcutsCfg = KSharedConfig::openConfig(kGlobalShortcutsFile);
-    KConfigGroup kwinShortcuts(shortcutsCfg, QStringLiteral("kwin"));
-    for (int i = 1; i <= kMaxRegions; ++i) {
-        kwinShortcuts.deleteEntry(QStringLiteral("kTile: region %1").arg(i));
-    }
-    kwinShortcuts.deleteEntry(QStringLiteral("kTile: Open settings"));
-    kwinShortcuts.deleteEntry(QStringLiteral("kTile: Move window to next screen"));
-    kwinShortcuts.deleteEntry(QStringLiteral("kTile: Open region picker"));
-    kwinShortcuts.deleteEntry(QStringLiteral("kTile: Close region picker"));
-    shortcutsCfg->sync();
+    // Drop stale kTile rows from kglobalshortcutsrc and runtime KGlobalAccel before reload.
+    clearKTileShortcutConfigEntries();
 
-    // Force runtime re-registration for all kTile region actions so updates to
-    // existing shortcuts are applied immediately (not only on first creation).
     QDBusInterface kglobalaccel(
         QStringLiteral("org.kde.kglobalaccel"),
         QStringLiteral("/kglobalaccel"),
         QStringLiteral("org.kde.KGlobalAccel"),
         QDBusConnection::sessionBus());
-    if (kglobalaccel.isValid()) {
-        // Ask KGlobalAccel for real IDs to avoid tuple mismatch issues.
-        QDBusReply<QList<QStringList>> actionsReply =
-            kglobalaccel.call(QStringLiteral("allActionsForComponent"), QStringList{QStringLiteral("kwin")});
-        if (actionsReply.isValid()) {
-            static const QRegularExpression regionActionRe(QStringLiteral("^kTile: region (\\d+)$"));
-            for (const QStringList &actionId : actionsReply.value()) {
-                if (actionId.size() < 2) {
-                    continue;
-                }
-                const QString actionName = actionId.at(1);
-                const QRegularExpressionMatch m = regionActionRe.match(actionName);
-                if (!m.hasMatch() && actionName != QLatin1String("kTile: Open settings")
-                    && actionName != QLatin1String("kTile: Move window to next screen")
-                    && actionName != QLatin1String("kTile: Open region picker")) {
-                    continue;
-                }
-                kglobalaccel.call(QStringLiteral("unRegister"), actionId);
-            }
-        }
+    unregisterAllKTileKWinActions(kglobalaccel);
+
+    QDBusInterface kwinComponent(
+        QStringLiteral("org.kde.kglobalaccel"),
+        QStringLiteral("/component/kwin"),
+        QStringLiteral("org.kde.kglobalaccel.Component"),
+        QDBusConnection::sessionBus());
+    if (kwinComponent.isValid()) {
+        kwinComponent.call(QStringLiteral("cleanUp"));
     }
 
     reconfigureKWin();
@@ -900,26 +999,24 @@ void KcmKTile::save()
         return;
     }
 
-    QDBusInterface kwinComponent(
-        QStringLiteral("org.kde.kglobalaccel"),
-        QStringLiteral("/component/kwin"),
-        QStringLiteral("org.kde.kglobalaccel.Component"),
-        QDBusConnection::sessionBus());
-    if (kwinComponent.isValid()) {
-        kwinComponent.call(QStringLiteral("cleanUp"));
-    }
+    deduplicateKTileKWinActions(kglobalaccel);
 
-    // Apply shortcuts after script registration (and cleanUp) so bindings persist in KGlobalAccel.
+    // Apply shortcuts after script registration so bindings persist in KGlobalAccel.
     if (kglobalaccel.isValid()) {
         QDBusReply<QList<QStringList>> actionsReply =
             kglobalaccel.call(QStringLiteral("allActionsForComponent"), QStringList{QStringLiteral("kwin")});
         if (actionsReply.isValid()) {
             static const QRegularExpression regionActionRe(QStringLiteral("^kTile: region (\\d+)$"));
+            QSet<QString> reboundNames;
             for (const QStringList &actionId : actionsReply.value()) {
                 if (actionId.size() < 2) {
                     continue;
                 }
                 const QString actionName = actionId.at(1);
+                if (reboundNames.contains(actionName)) {
+                    continue;
+                }
+                reboundNames.insert(actionName);
                 const QRegularExpressionMatch m = regionActionRe.match(actionName);
                 if (m.hasMatch()) {
                     const int regionNumber = m.captured(1).toInt();
@@ -978,6 +1075,10 @@ void KcmKTile::save()
         }
     }
 
+    // Do not persist kTile rows in kglobalshortcutsrc: bindings live in kwinrc and are
+    // applied when the KWin script registers shortcuts (avoids duplicate actions on login).
+    clearKTileShortcutConfigEntries();
+
     setNeedsSave(false);
 }
 
@@ -989,6 +1090,7 @@ void KcmKTile::defaults()
     m_openSettingsShortcut.clear();
     m_moveToNextScreenShortcut.clear();
     m_openRegionPickerShortcut.clear();
+    m_regionPickerOverlayOpacity = kDefaultRegionPickerOverlayOpacity;
     m_regions.clear();
     m_regions.push_back({defaultRegionForIndex(1), defaultShortcutForIndex(1), -1});
     emitRegionsChanged();
@@ -996,6 +1098,7 @@ void KcmKTile::defaults()
     Q_EMIT openSettingsShortcutChanged();
     Q_EMIT moveToNextScreenShortcutChanged();
     Q_EMIT openRegionPickerShortcutChanged();
+    Q_EMIT regionPickerOverlayOpacityChanged();
     setNeedsSave(true);
     updateRepresentsDefaults();
 }
@@ -1034,6 +1137,7 @@ void KcmKTile::reloadKWinScript() const
     QDBusReply<bool> loadedReply = scripting.call(QStringLiteral("isScriptLoaded"), QStringLiteral("org.kde.ktile"));
     if (loadedReply.isValid() && loadedReply.value()) {
         scripting.call(QStringLiteral("unloadScript"), QStringLiteral("org.kde.ktile"));
+        QThread::msleep(150);
     }
     scripting.call(QStringLiteral("start"));
 }

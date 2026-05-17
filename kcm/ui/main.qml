@@ -536,6 +536,45 @@ KCMUtils.SimpleKCM {
                         RowLayout {
                             Layout.fillWidth: true
                             spacing: Kirigami.Units.smallSpacing
+
+                            QQC2.Label {
+                                Layout.alignment: Qt.AlignVCenter
+                                text: "Region Picker Overlay Opacity:"
+                            }
+
+                            QQC2.Slider {
+                                id: regionPickerOpacitySlider
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: Kirigami.Units.gridUnit * 12
+                                from: 0
+                                to: 100
+                                stepSize: 5
+                                live: true
+                                enabled: kcm !== null
+                                value: kcm ? Math.round(kcm.regionPickerOverlayOpacity * 100) : 30
+                                onMoved: {
+                                    if (kcm) {
+                                        kcm.regionPickerOverlayOpacity = value / 100
+                                    }
+                                }
+                                onPressedChanged: {
+                                    if (!pressed && kcm) {
+                                        kcm.regionPickerOverlayOpacity = value / 100
+                                    }
+                                }
+                            }
+
+                            QQC2.Label {
+                                Layout.alignment: Qt.AlignVCenter
+                                Layout.preferredWidth: Kirigami.Units.gridUnit * 4
+                                horizontalAlignment: Text.AlignRight
+                                text: kcm ? (Math.round(kcm.regionPickerOverlayOpacity * 100) + "%") : "30%"
+                            }
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: Kirigami.Units.smallSpacing
                             visible: kcm && kcm.displaySelectorVisible
 
                             QQC2.Label {

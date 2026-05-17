@@ -5,6 +5,7 @@
 #   ./uninstall-kcm.sh                     # prefix ~/.local
 #   ./uninstall-kcm.sh /usr/local          # system prefix (needs write access)
 #   ./uninstall-kcm.sh --build-dir BUILD   # delete files listed in that build’s install_manifest.txt
+#   ./uninstall-kcm.sh --purge-shortcuts    # also remove kTile rows from ~/.config/kglobalshortcutsrc
 #
 # With --build-dir, each path in install_manifest.txt is removed (run cmake --install from that
 # build at least once so the manifest exists). The KWin script directory is removed entirely.
@@ -15,20 +16,21 @@
 #   ~/.config/plasma-workspace/env/ktile-paths.sh
 #   ~/.config/autostart/ktile-session-helper.desktop
 #
-# Does not remove kTile keys from ~/.config/kwinrc or kglobalshortcutsrc — remove those in
-# System Settings or by hand if you want a full reset.
+# Does not remove kTile keys from ~/.config/kwinrc unless you pass --purge-shortcuts (shortcuts only).
 set -euo pipefail
 
 PREFIX="${HOME}/.local"
 BUILD_DIR=""
 USER_EXTRAS=1
+PURGE_SHORTCUTS=0
 
 usage() {
     echo "Usage: $0 [PREFIX]"
     echo "       $0 --build-dir CMAKE_BUILD_DIR [PREFIX]"
     echo "Options:"
-    echo "  --build-dir DIR   Use install_manifest.txt from a CMake build directory."
-    echo "  --no-user-extras  Do not remove ~/.config/... ktile-paths.sh and autostart desktop."
+    echo "  --build-dir DIR      Use install_manifest.txt from a CMake build directory."
+    echo "  --no-user-extras     Do not remove ~/.config/... ktile-paths.sh and autostart desktop."
+    echo "  --purge-shortcuts    Remove kTile: entries from ~/.config/kglobalshortcutsrc."
     echo "Default PREFIX is ${HOME}/.local"
 }
 
@@ -43,6 +45,10 @@ while [[ $# -gt 0 ]]; do
             USER_EXTRAS=0
             shift
             ;;
+        --purge-shortcuts)
+            PURGE_SHORTCUTS=1
+            shift
+            ;;
         -h | --help)
             usage
             exit 0
@@ -55,6 +61,20 @@ while [[ $# -gt 0 ]]; do
 done
 
 PREFIX="${PREFIX%/}"
+
+purge_shortcut_config() {
+    local cfg="${HOME}/.config/kglobalshortcutsrc"
+    if [[ ! -f "$cfg" ]]; then
+        echo "no kglobalshortcutsrc at $cfg"
+        return 0
+    fi
+    if grep -q '^kTile:' "$cfg" 2>/dev/null; then
+        sed -i '/^kTile:/d' "$cfg"
+        echo "removed kTile: entries from $cfg"
+    else
+        echo "no kTile: entries in $cfg"
+    fi
+}
 
 remove_user_extras() {
     if [[ "$USER_EXTRAS" -ne 1 ]]; then
@@ -153,6 +173,15 @@ fi
 
 remove_user_extras
 
+if [[ "$PURGE_SHORTCUTS" -eq 1 ]]; then
+    purge_shortcut_config
+fi
+
 echo
 echo "Optional: stop the session helper if running:  pkill -f ktile-session-helper"
+if [[ "$PURGE_SHORTCUTS" -eq 1 ]]; then
+    echo "After reinstall: open kTile in System Settings and click Apply to rebuild shortcuts once."
+else
+    echo "Duplicate shortcuts? Re-run with --purge-shortcuts, reinstall, then Apply in kTile KCM."
+fi
 echo "Log out and back in (or restart Plasma) so caches update."

@@ -10,11 +10,13 @@ class RegionPickerController : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(QVariantList regions READ regions NOTIFY regionsChanged)
+    Q_PROPERTY(qreal overlayOpacity READ overlayOpacity NOTIFY overlayOpacityChanged)
 
 public:
     explicit RegionPickerController(QObject *parent = nullptr);
 
     QVariantList regions() const;
+    qreal overlayOpacity() const;
 
     Q_INVOKABLE void reloadFromConfig();
     Q_INVOKABLE void snapToRegion(int oneBasedIndex);
@@ -28,6 +30,7 @@ public:
 
 Q_SIGNALS:
     void regionsChanged();
+    void overlayOpacityChanged();
     void requestClose();
 
 private:
@@ -40,4 +43,5 @@ private:
     };
 
     QVector<RegionPreview> m_regions;
+    qreal m_overlayOpacity = 0.30;
 };

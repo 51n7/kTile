@@ -133,12 +133,19 @@ QVariantList RegionPickerController::regions() const
     return list;
 }
 
+qreal RegionPickerController::overlayOpacity() const
+{
+    return m_overlayOpacity;
+}
+
 void RegionPickerController::reloadFromConfig()
 {
     m_regions.clear();
 
     QSettings settings(kwinrcPath(), QSettings::IniFormat);
     settings.beginGroup(QStringLiteral("Script-org.kde.ktile"));
+    const qreal opacity = settings.value(QStringLiteral("regionPickerOverlayOpacity"), 0.30).toDouble();
+    m_overlayOpacity = std::clamp(opacity, 0.0, 1.0);
     int count = settings.value(QStringLiteral("regionCount"), 1).toInt();
     count = std::clamp(count, 1, 32);
 
@@ -156,6 +163,7 @@ void RegionPickerController::reloadFromConfig()
     settings.endGroup();
 
     Q_EMIT regionsChanged();
+    Q_EMIT overlayOpacityChanged();
 }
 
 void RegionPickerController::invokeRegionShortcut(int oneBasedIndex)
