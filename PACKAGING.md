@@ -1,9 +1,20 @@
 # Packaging kTile
 
-kTile has two installable parts, both installed by **one CMake build**:
+kTile has **three** installable parts, all produced by **one CMake build** (`CMakeLists.txt` adds `kcm/`, `session-helper/`, and installs `kwin-script/`):
 
-1. **KWin script** → `share/kwin/scripts/org.kde.ktile/` (enable under *Window Management → KWin Scripts*).
-2. **KCM** → Qt plugin `libkcm_ktile.so` under `lib(64)/qt6/plugins/kf6/kcm/` (shows under *Window Management → kTile*).
+| Part | Source | Typical install paths |
+|------|--------|------------------------|
+| **KWin script** | `kwin-script/` | `share/kwin/scripts/org.kde.ktile/` — enable under *Window Management → KWin Scripts* |
+| **KCM** | `kcm/` | `lib/qt6/plugins/plasma/kcms/systemsettings/kcm_ktile.so`, `share/applications/kcm_ktile.desktop` |
+| **Session helper** | `session-helper/` | `bin/ktile-session-helper`, `etc/xdg/autostart/ktile-session-helper.desktop`, `share/dbus-1/services/org.kde.ktile.service` |
+
+### Why a session helper?
+
+The **region picker** (fullscreen overlay, Escape to close, click-outside to dismiss) is implemented in `session-helper/` as a normal Qt Quick app that autostarts in the user session. The KWin script stays JavaScript-only: it registers shortcuts and calls D-Bus (`showRegionPicker`, `open`). The KCM is on-demand settings UI and is not running while you work in other apps.
+
+Do **not** bind a global **Escape** shortcut to “kTile: Close region picker” in System Settings — older builds used that approach; it interferes with KRunner. Current builds close the picker via local focus in the overlay.
+
+Picker-related sources: `session-helper/main.cpp` (D-Bus + window host), `regionpickercontroller.{h,cpp}` (read `kwinrc`, snap via KGlobalAccel), `qml/RegionPicker.qml`, `qml/RegionBlock.qml`.
 
 ## Install build dependencies
 
@@ -94,4 +105,12 @@ sudo dpkg -i ~/debian/ktile-*.deb
 ```
 
 If **`dpkg`** reports missing dependencies, run **`sudo apt-get install -f`** afterward.
+
+## After installing a package
+
+1. Enable **kTile** under *System Settings → Window Management → KWin Scripts* (or reload the script after upgrades).
+2. Confirm **`ktile-session-helper`** is running (`pgrep -a ktile-session-helper`). Packages install an autostart entry; logging out and back in once is enough if shortcuts or the picker do nothing.
+3. Configure regions and shortcuts under *Window Management → kTile*. Assign **Open region picker** on the General tab if you want the overlay.
+
+Diagnostics: `~/.cache/ktile-session-helper.log` (DBus and launcher messages).
 

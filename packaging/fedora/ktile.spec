@@ -36,10 +36,10 @@ Requires:       kf6-kirigami
 Requires:       kf6-kdeclarative
 
 %description
-kTile ships a KWin script and a System Settings page (KCM) under Window
-Management. You define a rectangle (x, y, width, height) and snap the active
-window there with a shortcut (default Meta+Shift+1). This is separate from
-KWin's built-in tiling.
+kTile ships a KWin script, a System Settings page (KCM), and a session helper
+(ktile-session-helper) for the region-picker overlay and org.kde.ktile D-Bus
+API. You define screen regions and snap the active window with shortcuts, or
+pick a region from the overlay. See README.md and PACKAGING.md in the source tree.
 
 %prep
 %autosetup -n ktile-%{version} -p1
