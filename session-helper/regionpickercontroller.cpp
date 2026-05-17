@@ -138,6 +138,11 @@ qreal RegionPickerController::overlayOpacity() const
     return m_overlayOpacity;
 }
 
+bool RegionPickerController::showPickerHeader() const
+{
+    return m_showPickerHeader;
+}
+
 void RegionPickerController::reloadFromConfig()
 {
     m_regions.clear();
@@ -146,6 +151,7 @@ void RegionPickerController::reloadFromConfig()
     settings.beginGroup(QStringLiteral("Script-org.kde.ktile"));
     const qreal opacity = settings.value(QStringLiteral("regionPickerOverlayOpacity"), 0.30).toDouble();
     m_overlayOpacity = std::clamp(opacity, 0.0, 1.0);
+    m_showPickerHeader = settings.value(QStringLiteral("regionPickerShowHeader"), true).toBool();
     int count = settings.value(QStringLiteral("regionCount"), 1).toInt();
     count = std::clamp(count, 1, 32);
 
@@ -164,6 +170,7 @@ void RegionPickerController::reloadFromConfig()
 
     Q_EMIT regionsChanged();
     Q_EMIT overlayOpacityChanged();
+    Q_EMIT showPickerHeaderChanged();
 }
 
 void RegionPickerController::invokeRegionShortcut(int oneBasedIndex)

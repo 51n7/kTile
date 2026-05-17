@@ -60,6 +60,7 @@ static constexpr int kDefaultGridColumns = 8;
 static constexpr int kDefaultGridRows = 6;
 static constexpr int kDefaultGridGap = 0;
 static constexpr qreal kDefaultRegionPickerOverlayOpacity = 0.30;
+static constexpr bool kDefaultRegionPickerShowHeader = true;
 static constexpr int kSettingsJsonVersion = 1;
 
 qreal clampRegionPickerOverlayOpacity(qreal value)
@@ -346,6 +347,10 @@ void KcmKTile::updateRepresentsDefaults()
         setRepresentsDefaults(false);
         return;
     }
+    if (m_regionPickerShowHeader != kDefaultRegionPickerShowHeader) {
+        setRepresentsDefaults(false);
+        return;
+    }
     const RegionEntry &first = m_regions.at(0);
     setRepresentsDefaults(first.region == defaultRegionForIndex(1) && first.shortcut == defaultShortcutForIndex(1)
                           && first.display == -1);
@@ -529,6 +534,22 @@ void KcmKTile::setRegionPickerOverlayOpacity(qreal value)
     updateRepresentsDefaults();
 }
 
+bool KcmKTile::regionPickerShowHeader() const
+{
+    return m_regionPickerShowHeader;
+}
+
+void KcmKTile::setRegionPickerShowHeader(bool value)
+{
+    if (m_regionPickerShowHeader == value) {
+        return;
+    }
+    m_regionPickerShowHeader = value;
+    Q_EMIT regionPickerShowHeaderChanged();
+    setNeedsSave(true);
+    updateRepresentsDefaults();
+}
+
 void KcmKTile::connectScreenGeometryUpdates()
 {
     const auto wireScreen = [this](QScreen *screen) {
@@ -672,6 +693,7 @@ QString KcmKTile::exportSettingsJson() const
     root.insert(QStringLiteral("moveToNextScreenShortcut"), normalizeShortcutSequence(m_moveToNextScreenShortcut));
     root.insert(QStringLiteral("openRegionPickerShortcut"), normalizeShortcutSequence(m_openRegionPickerShortcut));
     root.insert(QStringLiteral("regionPickerOverlayOpacity"), m_regionPickerOverlayOpacity);
+    root.insert(QStringLiteral("regionPickerShowHeader"), m_regionPickerShowHeader);
 
     QJsonArray regionsArr;
     for (const RegionEntry &e : m_regions) {
@@ -767,6 +789,7 @@ QString KcmKTile::importSettingsFromJson(const QString &json)
         normalizeShortcutSequence(root.value(QLatin1String("openRegionPickerShortcut")).toString());
     m_regionPickerOverlayOpacity = clampRegionPickerOverlayOpacity(
         qreal(root.value(QLatin1String("regionPickerOverlayOpacity")).toDouble(kDefaultRegionPickerOverlayOpacity)));
+    m_regionPickerShowHeader = root.value(QLatin1String("regionPickerShowHeader")).toBool(kDefaultRegionPickerShowHeader);
     m_regions = std::move(newRegions);
 
     emitRegionsChanged();
@@ -775,6 +798,7 @@ QString KcmKTile::importSettingsFromJson(const QString &json)
     Q_EMIT moveToNextScreenShortcutChanged();
     Q_EMIT openRegionPickerShortcutChanged();
     Q_EMIT regionPickerOverlayOpacityChanged();
+    Q_EMIT regionPickerShowHeaderChanged();
     updateRepresentsDefaults();
 
     save();
@@ -828,6 +852,8 @@ void KcmKTile::load()
     m_gridGap = std::clamp(g.readEntry(QStringLiteral("gridGap"), kDefaultGridGap), 0, kGridGapMax);
     m_regionPickerOverlayOpacity = clampRegionPickerOverlayOpacity(
         g.readEntry(QStringLiteral("regionPickerOverlayOpacity"), kDefaultRegionPickerOverlayOpacity));
+    m_regionPickerShowHeader =
+        g.readEntry(QStringLiteral("regionPickerShowHeader"), kDefaultRegionPickerShowHeader);
 
     // KWin's script only reads shortcuts from kwinrc (readConfig). Keyboard Shortcuts edits
     // kglobalshortcutsrc. If those diverge, the UI shows the global binding but registerShortcut
@@ -921,6 +947,7 @@ void KcmKTile::load()
     Q_EMIT moveToNextScreenShortcutChanged();
     Q_EMIT openRegionPickerShortcutChanged();
     Q_EMIT regionPickerOverlayOpacityChanged();
+    Q_EMIT regionPickerShowHeaderChanged();
     updateRepresentsDefaults();
     setNeedsSave(false);
 }
@@ -953,6 +980,7 @@ void KcmKTile::save()
     g.writeEntry(QStringLiteral("moveToNextScreenShortcut"), normalizeShortcutSequence(m_moveToNextScreenShortcut));
     g.writeEntry(QStringLiteral("openRegionPickerShortcut"), normalizeShortcutSequence(m_openRegionPickerShortcut));
     g.writeEntry(QStringLiteral("regionPickerOverlayOpacity"), m_regionPickerOverlayOpacity);
+    g.writeEntry(QStringLiteral("regionPickerShowHeader"), m_regionPickerShowHeader);
     for (int i = 0; i < m_regions.size(); ++i) {
         const int oneBased = i + 1;
         g.writeEntry(QStringLiteral("region%1").arg(oneBased), m_regions.at(i).region);
@@ -1091,6 +1119,7 @@ void KcmKTile::defaults()
     m_moveToNextScreenShortcut.clear();
     m_openRegionPickerShortcut.clear();
     m_regionPickerOverlayOpacity = kDefaultRegionPickerOverlayOpacity;
+    m_regionPickerShowHeader = kDefaultRegionPickerShowHeader;
     m_regions.clear();
     m_regions.push_back({defaultRegionForIndex(1), defaultShortcutForIndex(1), -1});
     emitRegionsChanged();
@@ -1099,6 +1128,7 @@ void KcmKTile::defaults()
     Q_EMIT moveToNextScreenShortcutChanged();
     Q_EMIT openRegionPickerShortcutChanged();
     Q_EMIT regionPickerOverlayOpacityChanged();
+    Q_EMIT regionPickerShowHeaderChanged();
     setNeedsSave(true);
     updateRepresentsDefaults();
 }

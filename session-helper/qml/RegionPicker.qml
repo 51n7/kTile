@@ -17,7 +17,10 @@ Window {
     readonly property int regionCount: controller ? controller.regions.length : 0
     readonly property int panelWidth: chromeMargins * 2 + gridColumns * cellWidth
                                             + (gridColumns - 1) * gridSpacing
-    readonly property int panelHeight: 420
+    readonly property bool showPickerHeader: controller ? controller.showPickerHeader : true
+    readonly property int panelScrollHeight: 362
+    readonly property int panelHeight: chromeMargins * 2 + panelScrollHeight
+                                         + (showPickerHeader ? headerHeight + 6 : 0)
 
     // No BypassWindowManagerHint: compositor must be allowed to give this window keyboard focus.
     flags: Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool
@@ -153,7 +156,8 @@ Window {
 
                 RowLayout {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: headerHeight
+                    Layout.preferredHeight: showPickerHeader ? headerHeight : 0
+                    visible: showPickerHeader
                     spacing: 2
 
                     Label {

@@ -25,6 +25,7 @@ class KcmKTile : public KQuickConfigModule
     Q_PROPERTY(QString moveToNextScreenShortcut READ moveToNextScreenShortcut WRITE setMoveToNextScreenShortcut NOTIFY moveToNextScreenShortcutChanged)
     Q_PROPERTY(QString openRegionPickerShortcut READ openRegionPickerShortcut WRITE setOpenRegionPickerShortcut NOTIFY openRegionPickerShortcutChanged)
     Q_PROPERTY(qreal regionPickerOverlayOpacity READ regionPickerOverlayOpacity WRITE setRegionPickerOverlayOpacity NOTIFY regionPickerOverlayOpacityChanged)
+    Q_PROPERTY(bool regionPickerShowHeader READ regionPickerShowHeader WRITE setRegionPickerShowHeader NOTIFY regionPickerShowHeaderChanged)
 
 public:
     KcmKTile(QObject *parent, const KPluginMetaData &data);
@@ -59,6 +60,9 @@ public:
     qreal regionPickerOverlayOpacity() const;
     void setRegionPickerOverlayOpacity(qreal value);
 
+    bool regionPickerShowHeader() const;
+    void setRegionPickerShowHeader(bool value);
+
     Q_INVOKABLE QString exportSettingsJson() const;
     Q_INVOKABLE QString exportSettingsToUrl(const QUrl &url) const;
     Q_INVOKABLE QString importSettingsFromJson(const QString &json);
@@ -76,6 +80,7 @@ Q_SIGNALS:
     void moveToNextScreenShortcutChanged();
     void openRegionPickerShortcutChanged();
     void regionPickerOverlayOpacityChanged();
+    void regionPickerShowHeaderChanged();
 
 private:
     struct RegionEntry {
@@ -101,6 +106,7 @@ private:
     QString m_moveToNextScreenShortcut;
     QString m_openRegionPickerShortcut;
     qreal m_regionPickerOverlayOpacity = 0.30;
+    bool m_regionPickerShowHeader = true;
     int m_gridColumns = 8;
     int m_gridRows = 6;
     int m_gridGap = 0;

@@ -512,7 +512,7 @@ KCMUtils.SimpleKCM {
 
                             QQC2.Label {
                                 Layout.alignment: Qt.AlignVCenter
-                                text: "Open Region Picker:"
+                                text: "Open Region Selector:"
                             }
 
                             Item {
@@ -539,36 +539,69 @@ KCMUtils.SimpleKCM {
 
                             QQC2.Label {
                                 Layout.alignment: Qt.AlignVCenter
-                                text: "Region Picker Overlay Opacity:"
+                                text: "Region Selector Overlay Opacity:"
                             }
 
-                            QQC2.Slider {
-                                id: regionPickerOpacitySlider
+                            Item {
                                 Layout.fillWidth: true
-                                Layout.minimumWidth: Kirigami.Units.gridUnit * 12
-                                from: 0
-                                to: 100
-                                stepSize: 5
-                                live: true
-                                enabled: kcm !== null
-                                value: kcm ? Math.round(kcm.regionPickerOverlayOpacity * 100) : 30
-                                onMoved: {
-                                    if (kcm) {
-                                        kcm.regionPickerOverlayOpacity = value / 100
+                                Layout.minimumWidth: Kirigami.Units.gridUnit * 2
+
+                                RowLayout {
+                                    anchors.right: parent.right
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    spacing: Kirigami.Units.smallSpacing
+
+                                    QQC2.Slider {
+                                        id: regionPickerOpacitySlider
+                                        Layout.preferredWidth: Kirigami.Units.gridUnit * 14
+                                        from: 0
+                                        to: 100
+                                        stepSize: 5
+                                        live: true
+                                        enabled: kcm !== null
+                                        value: kcm ? Math.round(kcm.regionPickerOverlayOpacity * 100) : 30
+                                        onMoved: {
+                                            if (kcm) {
+                                                kcm.regionPickerOverlayOpacity = value / 100
+                                            }
+                                        }
+                                        onPressedChanged: {
+                                            if (!pressed && kcm) {
+                                                kcm.regionPickerOverlayOpacity = value / 100
+                                            }
+                                        }
                                     }
-                                }
-                                onPressedChanged: {
-                                    if (!pressed && kcm) {
-                                        kcm.regionPickerOverlayOpacity = value / 100
+
+                                    QQC2.Label {
+                                        text: kcm ? (Math.round(kcm.regionPickerOverlayOpacity * 100) + "%") : "30%"
                                     }
                                 }
                             }
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: Kirigami.Units.smallSpacing
 
                             QQC2.Label {
                                 Layout.alignment: Qt.AlignVCenter
-                                Layout.preferredWidth: Kirigami.Units.gridUnit * 4
-                                horizontalAlignment: Text.AlignRight
-                                text: kcm ? (Math.round(kcm.regionPickerOverlayOpacity * 100) + "%") : "30%"
+                                text: "Show Region Selector Header:"
+                            }
+
+                            Item {
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: Kirigami.Units.gridUnit * 2
+                            }
+
+                            QQC2.CheckBox {
+                                Layout.alignment: Qt.AlignVCenter
+                                enabled: kcm !== null
+                                checked: kcm ? kcm.regionPickerShowHeader : true
+                                onToggled: {
+                                    if (kcm) {
+                                        kcm.regionPickerShowHeader = checked
+                                    }
+                                }
                             }
                         }
 
