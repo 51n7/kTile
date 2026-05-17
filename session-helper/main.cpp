@@ -303,6 +303,11 @@ public:
         return m_window && m_window->isVisible();
     }
 
+    void setRegionPickerHost(RegionPickerHost *host)
+    {
+        m_pickerHost = host;
+    }
+
     void setTargetWindowInternalId(const QString &internalId)
     {
         m_controller->setTargetWindowInternalId(internalId);
@@ -332,6 +337,10 @@ public Q_SLOTS:
     {
         if (!m_engine) {
             return;
+        }
+
+        if (m_pickerHost) {
+            m_pickerHost->hidePicker();
         }
 
         m_controller->reloadFromConfig();
@@ -378,6 +387,9 @@ public Q_SLOTS:
 
     void hideOverlay()
     {
+        if (m_controller) {
+            m_controller->cancelAutoCloseTimer();
+        }
         if (m_window) {
             m_window->hide();
         }
@@ -388,6 +400,7 @@ private:
     QPointer<DrawRegionController> m_controller;
     QPointer<QQuickWindow> m_window;
     QPointer<QObject> m_escapeFilter;
+    RegionPickerHost *m_pickerHost = nullptr;
 };
 
 class KTileAdaptor : public QDBusAbstractAdaptor
@@ -435,6 +448,9 @@ public Q_SLOTS:
     void showRegionPicker()
     {
         logLine(QStringLiteral("DBus showRegionPicker() invoked"));
+        if (m_drawRegionHost) {
+            m_drawRegionHost->hideOverlay();
+        }
         if (m_pickerHost) {
             QMetaObject::invokeMethod(m_pickerHost, &RegionPickerHost::showPicker, Qt::QueuedConnection);
         }
@@ -456,6 +472,9 @@ public Q_SLOTS:
                     .arg(y)
                     .arg(width)
                     .arg(height));
+        if (m_pickerHost) {
+            m_pickerHost->hidePicker();
+        }
         if (m_drawRegionHost) {
             m_drawRegionHost->prepareDrawRegion(internalId, x, y, width, height);
         }
@@ -482,6 +501,9 @@ public Q_SLOTS:
     void showDrawRegion()
     {
         logLine(QStringLiteral("DBus showDrawRegion() invoked"));
+        if (m_pickerHost) {
+            m_pickerHost->hidePicker();
+        }
         if (m_drawRegionHost) {
             QMetaObject::invokeMethod(m_drawRegionHost, "showOverlay", Qt::QueuedConnection);
         }
@@ -511,6 +533,7 @@ int main(int argc, char **argv)
     QQmlApplicationEngine engine;
     RegionPickerHost pickerHost(&engine);
     DrawRegionHost drawRegionHost(&engine);
+    drawRegionHost.setRegionPickerHost(&pickerHost);
 
     QObject root;
     new KTileAdaptor(&pickerHost, &drawRegionHost, &root);

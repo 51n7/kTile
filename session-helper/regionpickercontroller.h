@@ -29,8 +29,10 @@ public:
     Q_INVOKABLE void snapToRegion(int oneBasedIndex);
     Q_INVOKABLE void closePicker();
     Q_INVOKABLE void openSettings();
+    Q_INVOKABLE void openDrawRegion();
 
     void invokeRegionShortcut(int oneBasedIndex);
+    void invokeDrawRegionShortcut();
 
     /** Clear stale global Escape binding from older kTile builds. */
     static void purgeStaleClosePickerEscape();

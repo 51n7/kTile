@@ -179,6 +179,30 @@ Window {
                         Layout.preferredHeight: headerHeight
                         padding: 4
                         focusPolicy: Qt.NoFocus
+                        icon.name: "draw-rectangle"
+                        display: AbstractButton.IconOnly
+                        ToolTip.visible: hovered
+                        ToolTip.text: "Draw region on screen"
+                        onPressed: {
+                            pickerPanel.pointerHeld = true
+                            if (controller) {
+                                controller.cancelAutoCloseTimer()
+                            }
+                        }
+                        onReleased: pickerPanel.pointerHeld = false
+                        onCanceled: pickerPanel.pointerHeld = false
+                        onClicked: {
+                            if (controller) {
+                                controller.openDrawRegion()
+                            }
+                        }
+                    }
+
+                    ToolButton {
+                        Layout.preferredWidth: headerHeight
+                        Layout.preferredHeight: headerHeight
+                        padding: 4
+                        focusPolicy: Qt.NoFocus
                         icon.name: "settings-configure"
                         display: AbstractButton.IconOnly
                         ToolTip.visible: hovered

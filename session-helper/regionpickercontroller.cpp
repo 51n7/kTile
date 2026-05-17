@@ -233,6 +233,18 @@ void RegionPickerController::closePicker()
     Q_EMIT requestClose();
 }
 
+void RegionPickerController::invokeDrawRegionShortcut()
+{
+    QDBusInterface component(QStringLiteral("org.kde.kglobalaccel"),
+                             QStringLiteral("/component/kwin"),
+                             QStringLiteral("org.kde.kglobalaccel.Component"),
+                             QDBusConnection::sessionBus());
+    if (!component.isValid()) {
+        return;
+    }
+    component.call(QStringLiteral("invokeShortcut"), QStringLiteral("kTile: Draw region on screen"));
+}
+
 void RegionPickerController::openSettings()
 {
     cancelAutoCloseTimer();
@@ -244,4 +256,12 @@ void RegionPickerController::openSettings()
         iface.call(QStringLiteral("open"));
     }
     Q_EMIT requestClose();
+}
+
+void RegionPickerController::openDrawRegion()
+{
+    cancelAutoCloseTimer();
+    // Hide first so KWin's activeWindow is the user's window again, not this picker.
+    Q_EMIT requestClose();
+    QTimer::singleShot(120, this, [this]() { invokeDrawRegionShortcut(); });
 }
