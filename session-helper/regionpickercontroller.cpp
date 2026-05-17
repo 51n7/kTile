@@ -82,6 +82,8 @@ bool parseRegionPercents(const QString &spec, double *x, double *y, double *w, d
 RegionPickerController::RegionPickerController(QObject *parent)
     : QObject(parent)
 {
+    m_autoCloseTimer.setSingleShot(true);
+    connect(&m_autoCloseTimer, &QTimer::timeout, this, &RegionPickerController::closePicker);
 }
 
 void RegionPickerController::purgeStaleClosePickerEscape()
@@ -143,6 +145,11 @@ bool RegionPickerController::showPickerHeader() const
     return m_showPickerHeader;
 }
 
+int RegionPickerController::autoCloseSeconds() const
+{
+    return m_autoCloseSeconds;
+}
+
 void RegionPickerController::reloadFromConfig()
 {
     m_regions.clear();
@@ -152,6 +159,8 @@ void RegionPickerController::reloadFromConfig()
     const qreal opacity = settings.value(QStringLiteral("regionPickerOverlayOpacity"), 0.30).toDouble();
     m_overlayOpacity = std::clamp(opacity, 0.0, 1.0);
     m_showPickerHeader = settings.value(QStringLiteral("regionPickerShowHeader"), true).toBool();
+    m_autoCloseSeconds =
+        std::clamp(settings.value(QStringLiteral("regionPickerAutoCloseSeconds"), 10).toInt(), 0, 300);
     int count = settings.value(QStringLiteral("regionCount"), 1).toInt();
     count = std::clamp(count, 1, 32);
 
@@ -171,6 +180,21 @@ void RegionPickerController::reloadFromConfig()
     Q_EMIT regionsChanged();
     Q_EMIT overlayOpacityChanged();
     Q_EMIT showPickerHeaderChanged();
+    Q_EMIT autoCloseSecondsChanged();
+}
+
+void RegionPickerController::beginAutoCloseTimer()
+{
+    m_autoCloseTimer.stop();
+    if (m_autoCloseSeconds <= 0) {
+        return;
+    }
+    m_autoCloseTimer.start(m_autoCloseSeconds * 1000);
+}
+
+void RegionPickerController::cancelAutoCloseTimer()
+{
+    m_autoCloseTimer.stop();
 }
 
 void RegionPickerController::invokeRegionShortcut(int oneBasedIndex)
@@ -197,6 +221,7 @@ void RegionPickerController::snapToRegion(int oneBasedIndex)
         return;
     }
 
+    cancelAutoCloseTimer();
     // Hide first so KWin's activeWindow is the user's window again, not this picker.
     Q_EMIT requestClose();
     QTimer::singleShot(120, this, [this, oneBasedIndex]() { invokeRegionShortcut(oneBasedIndex); });
@@ -204,11 +229,13 @@ void RegionPickerController::snapToRegion(int oneBasedIndex)
 
 void RegionPickerController::closePicker()
 {
+    cancelAutoCloseTimer();
     Q_EMIT requestClose();
 }
 
 void RegionPickerController::openSettings()
 {
+    cancelAutoCloseTimer();
     QDBusInterface iface(QStringLiteral("org.kde.ktile"),
                          QStringLiteral("/KTile"),
                          QStringLiteral("org.kde.ktile.KTile"),

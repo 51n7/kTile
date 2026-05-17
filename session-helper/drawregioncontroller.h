@@ -5,6 +5,7 @@
 
 #include <QObject>
 #include <QRect>
+#include <QTimer>
 #include <QVariantMap>
 
 class DrawRegionController : public QObject
@@ -15,6 +16,7 @@ class DrawRegionController : public QObject
     Q_PROPERTY(int gridRows READ gridRows NOTIFY gridLayoutChanged)
     Q_PROPERTY(int gridGap READ gridGap NOTIFY gridLayoutChanged)
     Q_PROPERTY(bool showGridLines READ showGridLines NOTIFY showGridLinesChanged)
+    Q_PROPERTY(int autoCloseSeconds READ autoCloseSeconds NOTIFY autoCloseSecondsChanged)
 
 public:
     explicit DrawRegionController(QObject *parent = nullptr);
@@ -24,10 +26,13 @@ public:
     int gridRows() const;
     int gridGap() const;
     bool showGridLines() const;
+    int autoCloseSeconds() const;
     QRect tilingBasisRect() const;
 
     Q_INVOKABLE void reloadFromConfig();
     Q_INVOKABLE void closeOverlay();
+    Q_INVOKABLE void beginAutoCloseTimer();
+    Q_INVOKABLE void cancelAutoCloseTimer();
     Q_INVOKABLE void setTargetWindowInternalId(const QString &internalId);
     Q_INVOKABLE void setDrawRegionTilingBasis(int x, int y, int width, int height);
     Q_INVOKABLE void snapToPercentRect(qreal xPct, qreal yPct, qreal wPct, qreal hPct);
@@ -37,6 +42,7 @@ Q_SIGNALS:
     void overlayOpacityChanged();
     void gridLayoutChanged();
     void showGridLinesChanged();
+    void autoCloseSecondsChanged();
     void requestClose();
 
 private:
@@ -50,7 +56,9 @@ private:
     int m_gridRows = 6;
     int m_gridGap = 0;
     bool m_showGridLines = false;
+    int m_autoCloseSeconds = 5;
     QString m_targetInternalId;
+    QTimer m_autoCloseTimer;
     QRect m_tilingBasis;
     QVariantMap m_pendingDrawRegionSnap;
     bool m_hasPendingDrawRegionSnap = false;

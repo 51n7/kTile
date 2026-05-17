@@ -265,10 +265,14 @@ public:
         m_window->raise();
         m_window->requestActivate();
         focusEscapeTrap(m_window);
+        m_controller->beginAutoCloseTimer();
     }
 
     void hidePicker()
     {
+        if (m_controller) {
+            m_controller->cancelAutoCloseTimer();
+        }
         if (m_window) {
             m_window->hide();
         }
@@ -369,6 +373,7 @@ public Q_SLOTS:
         m_window->raise();
         m_window->requestActivate();
         focusEscapeTrap(m_window);
+        m_controller->beginAutoCloseTimer();
     }
 
     void hideOverlay()

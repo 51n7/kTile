@@ -56,6 +56,8 @@ Window {
         if (visible) {
             fillScreen()
             Qt.callLater(focusEscapeTrap)
+        } else if (controller) {
+            controller.cancelAutoCloseTimer()
         }
     }
 
@@ -147,6 +149,9 @@ Window {
                 hoverEnabled: false
                 onPressed: function (mouse) {
                     mouse.accepted = true
+                    if (controller) {
+                        controller.cancelAutoCloseTimer()
+                    }
                 }
             }
 
@@ -178,7 +183,12 @@ Window {
                         display: AbstractButton.IconOnly
                         ToolTip.visible: hovered
                         ToolTip.text: "Open kTile settings"
-                        onPressed: pickerPanel.pointerHeld = true
+                        onPressed: {
+                            pickerPanel.pointerHeld = true
+                            if (controller) {
+                                controller.cancelAutoCloseTimer()
+                            }
+                        }
                         onReleased: pickerPanel.pointerHeld = false
                         onCanceled: pickerPanel.pointerHeld = false
                         onClicked: {
@@ -197,7 +207,12 @@ Window {
                         display: AbstractButton.IconOnly
                         ToolTip.visible: hovered
                         ToolTip.text: "Close"
-                        onPressed: pickerPanel.pointerHeld = true
+                        onPressed: {
+                            pickerPanel.pointerHeld = true
+                            if (controller) {
+                                controller.cancelAutoCloseTimer()
+                            }
+                        }
                         onReleased: pickerPanel.pointerHeld = false
                         onCanceled: pickerPanel.pointerHeld = false
                         onClicked: pickerWindow.closePicker()
@@ -234,6 +249,11 @@ Window {
                                 boxY: modelData.boxY
                                 boxWidth: modelData.boxWidth
                                 boxHeight: modelData.boxHeight
+                                onPressed: {
+                                    if (controller) {
+                                        controller.cancelAutoCloseTimer()
+                                    }
+                                }
                                 onActivated: function (regionIndex) {
                                     if (controller) {
                                         controller.snapToRegion(regionIndex)

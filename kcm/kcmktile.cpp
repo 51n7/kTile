@@ -62,6 +62,14 @@ static constexpr int kDefaultGridGap = 0;
 static constexpr qreal kDefaultRegionPickerOverlayOpacity = 0.30;
 static constexpr qreal kDefaultDrawRegionOverlayOpacity = 0.30;
 static constexpr bool kDefaultDrawRegionShowGridLines = false;
+static constexpr int kDefaultRegionPickerAutoCloseSeconds = 10;
+static constexpr int kDefaultDrawRegionAutoCloseSeconds = 5;
+static constexpr int kOverlayAutoCloseSecondsMax = 300;
+
+int clampOverlayAutoCloseSeconds(int value)
+{
+    return std::clamp(value, 0, kOverlayAutoCloseSecondsMax);
+}
 static constexpr bool kDefaultRegionPickerShowHeader = true;
 static constexpr int kSettingsJsonVersion = 1;
 
@@ -381,11 +389,19 @@ void KcmKTile::updateRepresentsDefaults()
         setRepresentsDefaults(false);
         return;
     }
+    if (m_regionPickerAutoCloseSeconds != kDefaultRegionPickerAutoCloseSeconds) {
+        setRepresentsDefaults(false);
+        return;
+    }
     if (!qFuzzyCompare(m_drawRegionOverlayOpacity + 1.0, kDefaultDrawRegionOverlayOpacity + 1.0)) {
         setRepresentsDefaults(false);
         return;
     }
     if (m_drawRegionShowGridLines != kDefaultDrawRegionShowGridLines) {
+        setRepresentsDefaults(false);
+        return;
+    }
+    if (m_drawRegionAutoCloseSeconds != kDefaultDrawRegionAutoCloseSeconds) {
         setRepresentsDefaults(false);
         return;
     }
@@ -593,6 +609,23 @@ void KcmKTile::setRegionPickerOverlayOpacity(qreal value)
     updateRepresentsDefaults();
 }
 
+int KcmKTile::regionPickerAutoCloseSeconds() const
+{
+    return m_regionPickerAutoCloseSeconds;
+}
+
+void KcmKTile::setRegionPickerAutoCloseSeconds(int value)
+{
+    const int v = clampOverlayAutoCloseSeconds(value);
+    if (m_regionPickerAutoCloseSeconds == v) {
+        return;
+    }
+    m_regionPickerAutoCloseSeconds = v;
+    Q_EMIT regionPickerAutoCloseSecondsChanged();
+    setNeedsSave(true);
+    updateRepresentsDefaults();
+}
+
 qreal KcmKTile::drawRegionOverlayOpacity() const
 {
     return m_drawRegionOverlayOpacity;
@@ -622,6 +655,23 @@ void KcmKTile::setDrawRegionShowGridLines(bool value)
     }
     m_drawRegionShowGridLines = value;
     Q_EMIT drawRegionShowGridLinesChanged();
+    setNeedsSave(true);
+    updateRepresentsDefaults();
+}
+
+int KcmKTile::drawRegionAutoCloseSeconds() const
+{
+    return m_drawRegionAutoCloseSeconds;
+}
+
+void KcmKTile::setDrawRegionAutoCloseSeconds(int value)
+{
+    const int v = clampOverlayAutoCloseSeconds(value);
+    if (m_drawRegionAutoCloseSeconds == v) {
+        return;
+    }
+    m_drawRegionAutoCloseSeconds = v;
+    Q_EMIT drawRegionAutoCloseSecondsChanged();
     setNeedsSave(true);
     updateRepresentsDefaults();
 }
@@ -786,8 +836,10 @@ QString KcmKTile::exportSettingsJson() const
     root.insert(QStringLiteral("openRegionPickerShortcut"), normalizeShortcutSequence(m_openRegionPickerShortcut));
     root.insert(QStringLiteral("openDrawRegionShortcut"), normalizeShortcutSequence(m_openDrawRegionShortcut));
     root.insert(QStringLiteral("regionPickerOverlayOpacity"), m_regionPickerOverlayOpacity);
+    root.insert(QStringLiteral("regionPickerAutoCloseSeconds"), m_regionPickerAutoCloseSeconds);
     root.insert(QStringLiteral("drawRegionOverlayOpacity"), m_drawRegionOverlayOpacity);
     root.insert(QStringLiteral("drawRegionShowGridLines"), m_drawRegionShowGridLines);
+    root.insert(QStringLiteral("drawRegionAutoCloseSeconds"), m_drawRegionAutoCloseSeconds);
     root.insert(QStringLiteral("regionPickerShowHeader"), m_regionPickerShowHeader);
 
     QJsonArray regionsArr;
@@ -886,6 +938,8 @@ QString KcmKTile::importSettingsFromJson(const QString &json)
         normalizeShortcutSequence(root.value(QLatin1String("openDrawRegionShortcut")).toString());
     m_regionPickerOverlayOpacity = clampRegionPickerOverlayOpacity(
         qreal(root.value(QLatin1String("regionPickerOverlayOpacity")).toDouble(kDefaultRegionPickerOverlayOpacity)));
+    m_regionPickerAutoCloseSeconds = clampOverlayAutoCloseSeconds(
+        root.value(QLatin1String("regionPickerAutoCloseSeconds")).toInt(kDefaultRegionPickerAutoCloseSeconds));
     if (root.contains(QLatin1String("drawRegionOverlayOpacity"))) {
         m_drawRegionOverlayOpacity = clampRegionPickerOverlayOpacity(
             qreal(root.value(QLatin1String("drawRegionOverlayOpacity")).toDouble(kDefaultDrawRegionOverlayOpacity)));
@@ -894,6 +948,8 @@ QString KcmKTile::importSettingsFromJson(const QString &json)
     }
     m_drawRegionShowGridLines =
         root.value(QLatin1String("drawRegionShowGridLines")).toBool(kDefaultDrawRegionShowGridLines);
+    m_drawRegionAutoCloseSeconds = clampOverlayAutoCloseSeconds(
+        root.value(QLatin1String("drawRegionAutoCloseSeconds")).toInt(kDefaultDrawRegionAutoCloseSeconds));
     m_regionPickerShowHeader = root.value(QLatin1String("regionPickerShowHeader")).toBool(kDefaultRegionPickerShowHeader);
     m_regions = std::move(newRegions);
 
@@ -904,8 +960,10 @@ QString KcmKTile::importSettingsFromJson(const QString &json)
     Q_EMIT openRegionPickerShortcutChanged();
     Q_EMIT openDrawRegionShortcutChanged();
     Q_EMIT regionPickerOverlayOpacityChanged();
+    Q_EMIT regionPickerAutoCloseSecondsChanged();
     Q_EMIT drawRegionOverlayOpacityChanged();
     Q_EMIT drawRegionShowGridLinesChanged();
+    Q_EMIT drawRegionAutoCloseSecondsChanged();
     Q_EMIT regionPickerShowHeaderChanged();
     updateRepresentsDefaults();
 
@@ -960,6 +1018,8 @@ void KcmKTile::load()
     m_gridGap = std::clamp(g.readEntry(QStringLiteral("gridGap"), kDefaultGridGap), 0, kGridGapMax);
     m_regionPickerOverlayOpacity = clampRegionPickerOverlayOpacity(
         g.readEntry(QStringLiteral("regionPickerOverlayOpacity"), kDefaultRegionPickerOverlayOpacity));
+    m_regionPickerAutoCloseSeconds = clampOverlayAutoCloseSeconds(
+        g.readEntry(QStringLiteral("regionPickerAutoCloseSeconds"), kDefaultRegionPickerAutoCloseSeconds));
     if (g.hasKey(QStringLiteral("drawRegionOverlayOpacity"))) {
         m_drawRegionOverlayOpacity = clampRegionPickerOverlayOpacity(
             g.readEntry(QStringLiteral("drawRegionOverlayOpacity"), kDefaultDrawRegionOverlayOpacity));
@@ -969,6 +1029,8 @@ void KcmKTile::load()
     }
     m_drawRegionShowGridLines =
         g.readEntry(QStringLiteral("drawRegionShowGridLines"), kDefaultDrawRegionShowGridLines);
+    m_drawRegionAutoCloseSeconds = clampOverlayAutoCloseSeconds(
+        g.readEntry(QStringLiteral("drawRegionAutoCloseSeconds"), kDefaultDrawRegionAutoCloseSeconds));
     m_regionPickerShowHeader =
         g.readEntry(QStringLiteral("regionPickerShowHeader"), kDefaultRegionPickerShowHeader);
 
@@ -1079,8 +1141,10 @@ void KcmKTile::load()
     Q_EMIT openRegionPickerShortcutChanged();
     Q_EMIT openDrawRegionShortcutChanged();
     Q_EMIT regionPickerOverlayOpacityChanged();
+    Q_EMIT regionPickerAutoCloseSecondsChanged();
     Q_EMIT drawRegionOverlayOpacityChanged();
     Q_EMIT drawRegionShowGridLinesChanged();
+    Q_EMIT drawRegionAutoCloseSecondsChanged();
     Q_EMIT regionPickerShowHeaderChanged();
     updateRepresentsDefaults();
     setNeedsSave(false);
@@ -1115,8 +1179,10 @@ void KcmKTile::save()
     g.writeEntry(QStringLiteral("openRegionPickerShortcut"), normalizeShortcutSequence(m_openRegionPickerShortcut));
     g.writeEntry(QStringLiteral("openDrawRegionShortcut"), normalizeShortcutSequence(m_openDrawRegionShortcut));
     g.writeEntry(QStringLiteral("regionPickerOverlayOpacity"), m_regionPickerOverlayOpacity);
+    g.writeEntry(QStringLiteral("regionPickerAutoCloseSeconds"), m_regionPickerAutoCloseSeconds);
     g.writeEntry(QStringLiteral("drawRegionOverlayOpacity"), m_drawRegionOverlayOpacity);
     g.writeEntry(QStringLiteral("drawRegionShowGridLines"), m_drawRegionShowGridLines);
+    g.writeEntry(QStringLiteral("drawRegionAutoCloseSeconds"), m_drawRegionAutoCloseSeconds);
     g.writeEntry(QStringLiteral("regionPickerShowHeader"), m_regionPickerShowHeader);
     for (int i = 0; i < m_regions.size(); ++i) {
         const int oneBased = i + 1;
@@ -1269,8 +1335,10 @@ void KcmKTile::defaults()
     m_openRegionPickerShortcut.clear();
     m_openDrawRegionShortcut.clear();
     m_regionPickerOverlayOpacity = kDefaultRegionPickerOverlayOpacity;
+    m_regionPickerAutoCloseSeconds = kDefaultRegionPickerAutoCloseSeconds;
     m_drawRegionOverlayOpacity = kDefaultDrawRegionOverlayOpacity;
     m_drawRegionShowGridLines = kDefaultDrawRegionShowGridLines;
+    m_drawRegionAutoCloseSeconds = kDefaultDrawRegionAutoCloseSeconds;
     m_regionPickerShowHeader = kDefaultRegionPickerShowHeader;
     m_regions.clear();
     m_regions.push_back({defaultRegionForIndex(1), defaultShortcutForIndex(1), -1});
@@ -1281,8 +1349,10 @@ void KcmKTile::defaults()
     Q_EMIT openRegionPickerShortcutChanged();
     Q_EMIT openDrawRegionShortcutChanged();
     Q_EMIT regionPickerOverlayOpacityChanged();
+    Q_EMIT regionPickerAutoCloseSecondsChanged();
     Q_EMIT drawRegionOverlayOpacityChanged();
     Q_EMIT drawRegionShowGridLinesChanged();
+    Q_EMIT drawRegionAutoCloseSecondsChanged();
     Q_EMIT regionPickerShowHeaderChanged();
     setNeedsSave(true);
     updateRepresentsDefaults();

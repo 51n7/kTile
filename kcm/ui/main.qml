@@ -35,6 +35,9 @@ KCMUtils.SimpleKCM {
                 text: "General"
             }
             QQC2.TabButton {
+                text: "Region Selector"
+            }
+            QQC2.TabButton {
                 text: "Draw Region"
             }
         }
@@ -507,105 +510,6 @@ KCMUtils.SimpleKCM {
                         RowLayout {
                             Layout.fillWidth: true
                             spacing: Kirigami.Units.smallSpacing
-
-                            QQC2.Label {
-                                Layout.alignment: Qt.AlignVCenter
-                                text: "Open Region Selector:"
-                            }
-
-                            Item {
-                                Layout.fillWidth: true
-                                Layout.minimumWidth: Kirigami.Units.gridUnit * 2
-                            }
-
-                            KeySequenceItem {
-                                Layout.alignment: Qt.AlignVCenter
-                                keySequence: kcm ? kcm.openRegionPickerShortcut : ""
-                                onKeySequenceModified: {
-                                    if (!kcm) {
-                                        return
-                                    }
-                                    const normalized = ktileRoot.normalizeShortcutText(keySequence)
-                                    kcm.openRegionPickerShortcut = normalized.length > 0 ? normalized : ""
-                                }
-                            }
-                        }
-
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: Kirigami.Units.smallSpacing
-
-                            QQC2.Label {
-                                Layout.alignment: Qt.AlignVCenter
-                                text: "Region Selector Overlay Opacity:"
-                            }
-
-                            Item {
-                                Layout.fillWidth: true
-                                Layout.minimumWidth: Kirigami.Units.gridUnit * 2
-
-                                RowLayout {
-                                    anchors.right: parent.right
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    spacing: Kirigami.Units.smallSpacing
-
-                                    QQC2.Slider {
-                                        id: regionPickerOpacitySlider
-                                        Layout.preferredWidth: Kirigami.Units.gridUnit * 14
-                                        from: 0
-                                        to: 100
-                                        stepSize: 5
-                                        live: true
-                                        enabled: kcm !== null
-                                        value: kcm ? Math.round(kcm.regionPickerOverlayOpacity * 100) : 30
-                                        onMoved: {
-                                            if (kcm) {
-                                                kcm.regionPickerOverlayOpacity = value / 100
-                                            }
-                                        }
-                                        onPressedChanged: {
-                                            if (!pressed && kcm) {
-                                                kcm.regionPickerOverlayOpacity = value / 100
-                                            }
-                                        }
-                                    }
-
-                                    QQC2.Label {
-                                        text: kcm ? (Math.round(kcm.regionPickerOverlayOpacity * 100) + "%") : "30%"
-                                    }
-                                }
-                            }
-                        }
-
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: Kirigami.Units.smallSpacing
-
-                            QQC2.Label {
-                                Layout.alignment: Qt.AlignVCenter
-                                text: "Show Region Selector Header:"
-                            }
-
-                            Item {
-                                Layout.fillWidth: true
-                                Layout.minimumWidth: Kirigami.Units.gridUnit * 2
-                            }
-
-                            QQC2.CheckBox {
-                                Layout.alignment: Qt.AlignVCenter
-                                enabled: kcm !== null
-                                checked: kcm ? kcm.regionPickerShowHeader : true
-                                onToggled: {
-                                    if (kcm) {
-                                        kcm.regionPickerShowHeader = checked
-                                    }
-                                }
-                            }
-                        }
-
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: Kirigami.Units.smallSpacing
                             visible: kcm && kcm.displaySelectorVisible
 
                             QQC2.Label {
@@ -685,6 +589,143 @@ KCMUtils.SimpleKCM {
                     }
 
                     ColumnLayout {
+                        id: regionSelectorTabColumn
+                        Layout.fillWidth: true
+                        spacing: Kirigami.Units.largeSpacing
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: Kirigami.Units.smallSpacing
+
+                            QQC2.Label {
+                                Layout.alignment: Qt.AlignVCenter
+                                text: "Open Region Selector:"
+                            }
+
+                            Item {
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: Kirigami.Units.gridUnit * 2
+                            }
+
+                            KeySequenceItem {
+                                Layout.alignment: Qt.AlignVCenter
+                                keySequence: kcm ? kcm.openRegionPickerShortcut : ""
+                                onKeySequenceModified: {
+                                    if (!kcm) {
+                                        return
+                                    }
+                                    const normalized = ktileRoot.normalizeShortcutText(keySequence)
+                                    kcm.openRegionPickerShortcut = normalized.length > 0 ? normalized : ""
+                                }
+                            }
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: Kirigami.Units.smallSpacing
+
+                            QQC2.Label {
+                                Layout.alignment: Qt.AlignVCenter
+                                text: "Overlay Opacity:"
+                            }
+
+                            Item {
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: Kirigami.Units.gridUnit * 2
+                            }
+
+                            QQC2.Slider {
+                                id: regionPickerOpacitySlider
+                                Layout.alignment: Qt.AlignVCenter
+                                Layout.preferredWidth: Kirigami.Units.gridUnit * 14
+                                from: 0
+                                to: 100
+                                stepSize: 5
+                                live: true
+                                enabled: kcm !== null
+                                value: kcm ? Math.round(kcm.regionPickerOverlayOpacity * 100) : 30
+                                onMoved: {
+                                    if (kcm) {
+                                        kcm.regionPickerOverlayOpacity = value / 100
+                                    }
+                                }
+                                onPressedChanged: {
+                                    if (!pressed && kcm) {
+                                        kcm.regionPickerOverlayOpacity = value / 100
+                                    }
+                                }
+                            }
+
+                            QQC2.Label {
+                                Layout.alignment: Qt.AlignVCenter
+                                text: kcm ? (Math.round(kcm.regionPickerOverlayOpacity * 100) + "%") : "30%"
+                            }
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: Kirigami.Units.smallSpacing
+
+                            QQC2.Label {
+                                Layout.alignment: Qt.AlignVCenter
+                                text: "Show Header:"
+                            }
+
+                            Item {
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: Kirigami.Units.gridUnit * 2
+                            }
+
+                            QQC2.CheckBox {
+                                Layout.alignment: Qt.AlignVCenter
+                                enabled: kcm !== null
+                                checked: kcm ? kcm.regionPickerShowHeader : true
+                                onToggled: {
+                                    if (kcm) {
+                                        kcm.regionPickerShowHeader = checked
+                                    }
+                                }
+                            }
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: Kirigami.Units.smallSpacing
+
+                            QQC2.Label {
+                                Layout.alignment: Qt.AlignVCenter
+                                text: "Auto-close After:"
+                            }
+
+                            Item {
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: Kirigami.Units.gridUnit * 2
+                            }
+
+                            QQC2.SpinBox {
+                                Layout.alignment: Qt.AlignVCenter
+                                Layout.preferredWidth: Kirigami.Units.gridUnit * 8
+                                from: 0
+                                to: 300
+                                stepSize: 1
+                                editable: true
+                                enabled: kcm !== null
+                                value: kcm ? kcm.regionPickerAutoCloseSeconds : 10
+                                onValueModified: {
+                                    if (kcm) {
+                                        kcm.regionPickerAutoCloseSeconds = value
+                                    }
+                                }
+                            }
+
+                            QQC2.Label {
+                                Layout.alignment: Qt.AlignVCenter
+                                text: "seconds"
+                            }
+                        }
+                    }
+
+                    ColumnLayout {
                         id: drawRegionTabColumn
                         Layout.fillWidth: true
                         spacing: Kirigami.Units.largeSpacing
@@ -695,7 +736,7 @@ KCMUtils.SimpleKCM {
 
                             QQC2.Label {
                                 Layout.alignment: Qt.AlignVCenter
-                                text: "Draw region on screen:"
+                                text: "Draw Region On Screen:"
                             }
 
                             Item {
@@ -722,7 +763,7 @@ KCMUtils.SimpleKCM {
 
                             QQC2.Label {
                                 Layout.alignment: Qt.AlignVCenter
-                                text: "Draw Region Overlay Opacity:"
+                                text: "Overlay Opacity:"
                             }
 
                             Item {
@@ -764,7 +805,7 @@ KCMUtils.SimpleKCM {
 
                             QQC2.Label {
                                 Layout.alignment: Qt.AlignVCenter
-                                text: "Show grid lines:"
+                                text: "Show Grid Lines:"
                             }
 
                             Item {
@@ -781,6 +822,42 @@ KCMUtils.SimpleKCM {
                                         kcm.drawRegionShowGridLines = checked
                                     }
                                 }
+                            }
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: Kirigami.Units.smallSpacing
+
+                            QQC2.Label {
+                                Layout.alignment: Qt.AlignVCenter
+                                text: "Auto-close After:"
+                            }
+
+                            Item {
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: Kirigami.Units.gridUnit * 2
+                            }
+
+                            QQC2.SpinBox {
+                                Layout.alignment: Qt.AlignVCenter
+                                Layout.preferredWidth: Kirigami.Units.gridUnit * 8
+                                from: 0
+                                to: 300
+                                stepSize: 1
+                                editable: true
+                                enabled: kcm !== null
+                                value: kcm ? kcm.drawRegionAutoCloseSeconds : 5
+                                onValueModified: {
+                                    if (kcm) {
+                                        kcm.drawRegionAutoCloseSeconds = value
+                                    }
+                                }
+                            }
+
+                            QQC2.Label {
+                                Layout.alignment: Qt.AlignVCenter
+                                text: "seconds"
                             }
                         }
                     }

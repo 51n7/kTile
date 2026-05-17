@@ -26,8 +26,10 @@ class KcmKTile : public KQuickConfigModule
     Q_PROPERTY(QString openRegionPickerShortcut READ openRegionPickerShortcut WRITE setOpenRegionPickerShortcut NOTIFY openRegionPickerShortcutChanged)
     Q_PROPERTY(QString openDrawRegionShortcut READ openDrawRegionShortcut WRITE setOpenDrawRegionShortcut NOTIFY openDrawRegionShortcutChanged)
     Q_PROPERTY(qreal regionPickerOverlayOpacity READ regionPickerOverlayOpacity WRITE setRegionPickerOverlayOpacity NOTIFY regionPickerOverlayOpacityChanged)
+    Q_PROPERTY(int regionPickerAutoCloseSeconds READ regionPickerAutoCloseSeconds WRITE setRegionPickerAutoCloseSeconds NOTIFY regionPickerAutoCloseSecondsChanged)
     Q_PROPERTY(qreal drawRegionOverlayOpacity READ drawRegionOverlayOpacity WRITE setDrawRegionOverlayOpacity NOTIFY drawRegionOverlayOpacityChanged)
     Q_PROPERTY(bool drawRegionShowGridLines READ drawRegionShowGridLines WRITE setDrawRegionShowGridLines NOTIFY drawRegionShowGridLinesChanged)
+    Q_PROPERTY(int drawRegionAutoCloseSeconds READ drawRegionAutoCloseSeconds WRITE setDrawRegionAutoCloseSeconds NOTIFY drawRegionAutoCloseSecondsChanged)
     Q_PROPERTY(bool regionPickerShowHeader READ regionPickerShowHeader WRITE setRegionPickerShowHeader NOTIFY regionPickerShowHeaderChanged)
 
 public:
@@ -66,11 +68,17 @@ public:
     qreal regionPickerOverlayOpacity() const;
     void setRegionPickerOverlayOpacity(qreal value);
 
+    int regionPickerAutoCloseSeconds() const;
+    void setRegionPickerAutoCloseSeconds(int value);
+
     qreal drawRegionOverlayOpacity() const;
     void setDrawRegionOverlayOpacity(qreal value);
 
     bool drawRegionShowGridLines() const;
     void setDrawRegionShowGridLines(bool value);
+
+    int drawRegionAutoCloseSeconds() const;
+    void setDrawRegionAutoCloseSeconds(int value);
 
     bool regionPickerShowHeader() const;
     void setRegionPickerShowHeader(bool value);
@@ -93,8 +101,10 @@ Q_SIGNALS:
     void openRegionPickerShortcutChanged();
     void openDrawRegionShortcutChanged();
     void regionPickerOverlayOpacityChanged();
+    void regionPickerAutoCloseSecondsChanged();
     void drawRegionOverlayOpacityChanged();
     void drawRegionShowGridLinesChanged();
+    void drawRegionAutoCloseSecondsChanged();
     void regionPickerShowHeaderChanged();
 
 private:
@@ -122,8 +132,10 @@ private:
     QString m_openRegionPickerShortcut;
     QString m_openDrawRegionShortcut;
     qreal m_regionPickerOverlayOpacity = 0.30;
+    int m_regionPickerAutoCloseSeconds = 10;
     qreal m_drawRegionOverlayOpacity = 0.30;
     bool m_drawRegionShowGridLines = false;
+    int m_drawRegionAutoCloseSeconds = 5;
     bool m_regionPickerShowHeader = true;
     int m_gridColumns = 8;
     int m_gridRows = 6;

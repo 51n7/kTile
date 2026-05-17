@@ -87,6 +87,8 @@ bool nearlyEqual(qreal a, qreal b)
 DrawRegionController::DrawRegionController(QObject *parent)
     : QObject(parent)
 {
+    m_autoCloseTimer.setSingleShot(true);
+    connect(&m_autoCloseTimer, &QTimer::timeout, this, &DrawRegionController::closeOverlay);
 }
 
 qreal DrawRegionController::overlayOpacity() const
@@ -114,6 +116,11 @@ bool DrawRegionController::showGridLines() const
     return m_showGridLines;
 }
 
+int DrawRegionController::autoCloseSeconds() const
+{
+    return m_autoCloseSeconds;
+}
+
 QRect DrawRegionController::tilingBasisRect() const
 {
     return m_tilingBasis;
@@ -131,6 +138,8 @@ void DrawRegionController::reloadFromConfig()
     m_gridRows = std::clamp(settings.value(QStringLiteral("gridRows"), 6).toInt(), 1, 64);
     m_gridGap = std::clamp(settings.value(QStringLiteral("gridGap"), 0).toInt(), 0, 48);
     m_showGridLines = settings.value(QStringLiteral("drawRegionShowGridLines"), false).toBool();
+    m_autoCloseSeconds =
+        std::clamp(settings.value(QStringLiteral("drawRegionAutoCloseSeconds"), 5).toInt(), 0, 300);
     const int bx = settings.value(QStringLiteral("drawRegionTilingBasisX"), -1).toInt();
     const int by = settings.value(QStringLiteral("drawRegionTilingBasisY"), -1).toInt();
     const int bw = settings.value(QStringLiteral("drawRegionTilingBasisW"), -1).toInt();
@@ -142,10 +151,26 @@ void DrawRegionController::reloadFromConfig()
     Q_EMIT overlayOpacityChanged();
     Q_EMIT gridLayoutChanged();
     Q_EMIT showGridLinesChanged();
+    Q_EMIT autoCloseSecondsChanged();
+}
+
+void DrawRegionController::beginAutoCloseTimer()
+{
+    m_autoCloseTimer.stop();
+    if (m_autoCloseSeconds <= 0) {
+        return;
+    }
+    m_autoCloseTimer.start(m_autoCloseSeconds * 1000);
+}
+
+void DrawRegionController::cancelAutoCloseTimer()
+{
+    m_autoCloseTimer.stop();
 }
 
 void DrawRegionController::closeOverlay()
 {
+    cancelAutoCloseTimer();
     Q_EMIT requestClose();
 }
 
@@ -273,6 +298,7 @@ void DrawRegionController::scheduleSnapAfterClose(qreal xPct, qreal yPct, qreal 
 
 void DrawRegionController::snapToPercentRect(qreal xPct, qreal yPct, qreal wPct, qreal hPct)
 {
+    cancelAutoCloseTimer();
     const QString spec =
         QStringLiteral("%1 %2 %3 %4").arg(xPct, 0, 'f', 8).arg(yPct, 0, 'f', 8).arg(wPct, 0, 'f', 8).arg(hPct, 0, 'f', 8);
 

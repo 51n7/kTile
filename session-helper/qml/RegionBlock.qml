@@ -12,6 +12,7 @@ Item {
     required property double boxY
 
     signal activated(int regionIndex)
+    signal pressed()
 
     width: 200
     height: 120
@@ -36,6 +37,7 @@ Item {
         anchors.margins: pad
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
+        onPressed: root.pressed()
         onClicked: root.activated(root.regionIndex)
 
         Rectangle {

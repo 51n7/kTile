@@ -15,6 +15,8 @@ Item {
 
     /** Grid percentages (0–100), same strings as KCM region slots — see RegionGridEditor.qml. */
     signal regionSelected(real xPct, real yPct, real wPct, real hPct)
+    /** Emitted when the user presses to start a selection (cancels idle auto-close). */
+    signal drawStarted()
 
     property bool dragging: false
     property int anchorGX: 0
@@ -159,6 +161,7 @@ Item {
                 }
             }
             onPressed: function (mouse) {
+                root.drawStarted()
                 root.dragging = true
                 const p = root.posToCell(mouse.x, mouse.y)
                 root.anchorGX = p.gx

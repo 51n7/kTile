@@ -4,6 +4,7 @@
 #pragma once
 
 #include <QObject>
+#include <QTimer>
 #include <QVariantList>
 
 class RegionPickerController : public QObject
@@ -12,6 +13,7 @@ class RegionPickerController : public QObject
     Q_PROPERTY(QVariantList regions READ regions NOTIFY regionsChanged)
     Q_PROPERTY(qreal overlayOpacity READ overlayOpacity NOTIFY overlayOpacityChanged)
     Q_PROPERTY(bool showPickerHeader READ showPickerHeader NOTIFY showPickerHeaderChanged)
+    Q_PROPERTY(int autoCloseSeconds READ autoCloseSeconds NOTIFY autoCloseSecondsChanged)
 
 public:
     explicit RegionPickerController(QObject *parent = nullptr);
@@ -19,8 +21,11 @@ public:
     QVariantList regions() const;
     qreal overlayOpacity() const;
     bool showPickerHeader() const;
+    int autoCloseSeconds() const;
 
     Q_INVOKABLE void reloadFromConfig();
+    Q_INVOKABLE void beginAutoCloseTimer();
+    Q_INVOKABLE void cancelAutoCloseTimer();
     Q_INVOKABLE void snapToRegion(int oneBasedIndex);
     Q_INVOKABLE void closePicker();
     Q_INVOKABLE void openSettings();
@@ -34,6 +39,7 @@ Q_SIGNALS:
     void regionsChanged();
     void overlayOpacityChanged();
     void showPickerHeaderChanged();
+    void autoCloseSecondsChanged();
     void requestClose();
 
 private:
@@ -48,4 +54,6 @@ private:
     QVector<RegionPreview> m_regions;
     qreal m_overlayOpacity = 0.30;
     bool m_showPickerHeader = true;
+    int m_autoCloseSeconds = 10;
+    QTimer m_autoCloseTimer;
 };

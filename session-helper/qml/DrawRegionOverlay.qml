@@ -30,6 +30,9 @@ Window {
             regionGrid.clearSelection()
             Qt.callLater(focusEscapeTrap)
         } else {
+            if (controller) {
+                controller.cancelAutoCloseTimer()
+            }
             regionGrid.clearSelection()
         }
     }
@@ -100,6 +103,12 @@ Window {
             rows: controller ? controller.gridRows : 6
             gap: controller ? controller.gridGap : 0
             showGridLines: controller ? controller.showGridLines : false
+
+            onDrawStarted: {
+                if (controller) {
+                    controller.cancelAutoCloseTimer()
+                }
+            }
 
             onRegionSelected: function (xPct, yPct, wPct, hPct) {
                 if (controller) {
