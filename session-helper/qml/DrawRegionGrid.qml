@@ -26,6 +26,11 @@ Item {
     property int dragGX1: 0
     property int dragGY1: 0
     property bool hasSelection: false
+    readonly property real selectionCornerRadius: 8
+
+    function cornerRadiusForBox(boxW, boxH) {
+        return Math.min(selectionCornerRadius, boxW / 2, boxH / 2)
+    }
 
     function cellMetrics() {
         const w = Math.max(1, gridArea.width)
@@ -93,6 +98,7 @@ Item {
         Rectangle {
             id: selectionRect
             z: 1
+            radius: root.cornerRadiusForBox(width, height)
             color: Qt.alpha(palette.highlight, 0.35)
             border.color: palette.highlight
             border.width: 2
@@ -102,6 +108,7 @@ Item {
         Rectangle {
             id: hoverBox
             z: 2
+            radius: root.cornerRadiusForBox(width, height)
             visible: false
             color: Qt.alpha(palette.highlight, 0.22)
             border.color: Qt.alpha(palette.highlight, 0.6)
