@@ -32,13 +32,13 @@ KCMUtils.SimpleKCM {
                 text: "Regions"
             }
             QQC2.TabButton {
-                text: "General"
-            }
-            QQC2.TabButton {
                 text: "Region Selector"
             }
             QQC2.TabButton {
                 text: "Draw Region"
+            }
+            QQC2.TabButton {
+                text: "General"
             }
         }
     }
@@ -476,119 +476,6 @@ KCMUtils.SimpleKCM {
                     }
 
                     ColumnLayout {
-                        id: generalTabColumn
-                        Layout.fillWidth: true
-                        spacing: Kirigami.Units.largeSpacing
-
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: Kirigami.Units.smallSpacing
-
-                            QQC2.Label {
-                                Layout.alignment: Qt.AlignVCenter
-                                text: "Open kTile Settings:"
-                            }
-
-                            Item {
-                                Layout.fillWidth: true
-                                Layout.minimumWidth: Kirigami.Units.gridUnit * 2
-                            }
-
-                            KeySequenceItem {
-                                Layout.alignment: Qt.AlignVCenter
-                                keySequence: kcm ? kcm.openSettingsShortcut : ""
-                                onKeySequenceModified: {
-                                    if (!kcm) {
-                                        return
-                                    }
-                                    const normalized = ktileRoot.normalizeShortcutText(keySequence)
-                                    kcm.openSettingsShortcut = normalized.length > 0 ? normalized : ""
-                                }
-                            }
-                        }
-
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: Kirigami.Units.smallSpacing
-                            visible: kcm && kcm.displaySelectorVisible
-
-                            QQC2.Label {
-                                Layout.alignment: Qt.AlignVCenter
-                                text: "Move window to next screen:"
-                            }
-
-                            Item {
-                                Layout.fillWidth: true
-                                Layout.minimumWidth: Kirigami.Units.gridUnit * 2
-                            }
-
-                            KeySequenceItem {
-                                Layout.alignment: Qt.AlignVCenter
-                                keySequence: kcm ? kcm.moveToNextScreenShortcut : ""
-                                onKeySequenceModified: {
-                                    if (!kcm) {
-                                        return
-                                    }
-                                    const normalized = ktileRoot.normalizeShortcutText(keySequence)
-                                    kcm.moveToNextScreenShortcut = normalized.length > 0 ? normalized : ""
-                                }
-                            }
-                        }
-
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: Kirigami.Units.smallSpacing
-
-                            QQC2.Label {
-                                Layout.alignment: Qt.AlignVCenter
-                                text: "Export/Import:"
-                            }
-
-                            Item {
-                                Layout.fillWidth: true
-                                Layout.minimumWidth: Kirigami.Units.gridUnit * 2
-                            }
-
-                            QQC2.Button {
-                                Layout.alignment: Qt.AlignVCenter
-                                icon.name: "document-export"
-                                text: "Export..."
-                                onClicked: exportSettingsDialog.open()
-                            }
-
-                            QQC2.Button {
-                                Layout.alignment: Qt.AlignVCenter
-                                icon.name: "document-import"
-                                text: "Import..."
-                                onClicked: importSettingsDialog.open()
-                            }
-                        }
-
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: Kirigami.Units.smallSpacing
-                            visible: ktileRoot.importSucceededVisible
-
-                            Kirigami.Icon {
-                                Layout.alignment: Qt.AlignVCenter
-                                source: "dialog-ok-apply"
-                                width: Kirigami.Units.iconSizes.small
-                                height: width
-                                isMask: true
-                                color: Kirigami.Theme.positiveTextColor
-                            }
-
-                            QQC2.Label {
-                                Layout.fillWidth: true
-                                Layout.alignment: Qt.AlignVCenter
-                                wrapMode: Text.Wrap
-                                text: "Settings imported successfully."
-                                color: Kirigami.Theme.positiveTextColor
-                            }
-                        }
-                    }
-
-                    ColumnLayout {
                         id: regionSelectorTabColumn
                         Layout.fillWidth: true
                         spacing: Kirigami.Units.largeSpacing
@@ -858,6 +745,119 @@ KCMUtils.SimpleKCM {
                             QQC2.Label {
                                 Layout.alignment: Qt.AlignVCenter
                                 text: "seconds"
+                            }
+                        }
+                    }
+
+                    ColumnLayout {
+                        id: generalTabColumn
+                        Layout.fillWidth: true
+                        spacing: Kirigami.Units.largeSpacing
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: Kirigami.Units.smallSpacing
+
+                            QQC2.Label {
+                                Layout.alignment: Qt.AlignVCenter
+                                text: "Open kTile Settings:"
+                            }
+
+                            Item {
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: Kirigami.Units.gridUnit * 2
+                            }
+
+                            KeySequenceItem {
+                                Layout.alignment: Qt.AlignVCenter
+                                keySequence: kcm ? kcm.openSettingsShortcut : ""
+                                onKeySequenceModified: {
+                                    if (!kcm) {
+                                        return
+                                    }
+                                    const normalized = ktileRoot.normalizeShortcutText(keySequence)
+                                    kcm.openSettingsShortcut = normalized.length > 0 ? normalized : ""
+                                }
+                            }
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: Kirigami.Units.smallSpacing
+                            visible: kcm && kcm.displaySelectorVisible
+
+                            QQC2.Label {
+                                Layout.alignment: Qt.AlignVCenter
+                                text: "Move window to next screen:"
+                            }
+
+                            Item {
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: Kirigami.Units.gridUnit * 2
+                            }
+
+                            KeySequenceItem {
+                                Layout.alignment: Qt.AlignVCenter
+                                keySequence: kcm ? kcm.moveToNextScreenShortcut : ""
+                                onKeySequenceModified: {
+                                    if (!kcm) {
+                                        return
+                                    }
+                                    const normalized = ktileRoot.normalizeShortcutText(keySequence)
+                                    kcm.moveToNextScreenShortcut = normalized.length > 0 ? normalized : ""
+                                }
+                            }
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: Kirigami.Units.smallSpacing
+
+                            QQC2.Label {
+                                Layout.alignment: Qt.AlignVCenter
+                                text: "Export/Import:"
+                            }
+
+                            Item {
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: Kirigami.Units.gridUnit * 2
+                            }
+
+                            QQC2.Button {
+                                Layout.alignment: Qt.AlignVCenter
+                                icon.name: "document-export"
+                                text: "Export..."
+                                onClicked: exportSettingsDialog.open()
+                            }
+
+                            QQC2.Button {
+                                Layout.alignment: Qt.AlignVCenter
+                                icon.name: "document-import"
+                                text: "Import..."
+                                onClicked: importSettingsDialog.open()
+                            }
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: Kirigami.Units.smallSpacing
+                            visible: ktileRoot.importSucceededVisible
+
+                            Kirigami.Icon {
+                                Layout.alignment: Qt.AlignVCenter
+                                source: "dialog-ok-apply"
+                                width: Kirigami.Units.iconSizes.small
+                                height: width
+                                isMask: true
+                                color: Kirigami.Theme.positiveTextColor
+                            }
+
+                            QQC2.Label {
+                                Layout.fillWidth: true
+                                Layout.alignment: Qt.AlignVCenter
+                                wrapMode: Text.Wrap
+                                text: "Settings imported successfully."
+                                color: Kirigami.Theme.positiveTextColor
                             }
                         }
                     }
