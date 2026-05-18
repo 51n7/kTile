@@ -114,3 +114,22 @@ After install, `ktile-session-helper` should autostart at login (`.desktop` + D-
 ## License
 
 GPL-2.0-or-later — see [LICENSE](LICENSE).
+
+<table>
+    <tr>
+        <td width="50%">
+            <a href="https://github.com/user-attachments/assets/51bda717-0445-4fbd-9f46-8467fd79029d">
+                <img width="794" height="282" alt="Screenshot_20260518_154829-thumb" src="https://github.com/user-attachments/assets/6162e724-c20f-4efb-9f09-ad6c9dfb64ff" />
+            </a>
+        </td>
+        <td width="50%">
+            <a href="https://github.com/user-attachments/assets/a6fbdd28-86ba-4801-94a9-4ddf0c13cf50">
+                <img width="794" height="282" alt="Screenshot_20260518_154933-thumb" src="https://github.com/user-attachments/assets/48919155-e5ef-4ea9-ae4f-5b39a6c8a79e" />
+            </a>
+        </td>
+    </tr>
+    <tr>
+        <td width="50%" align="center"><strong>Regions</strong><br/>Region list, per-region shortcuts, and grid editor for layout and snap targets.</td>
+        <td width="50%" align="center"><strong>Region Selector</strong><br/>Global shortcut, overlay opacity, header visibility, and idle auto-close for the picker.</td>
+    </tr>
+</table>
