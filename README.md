@@ -32,19 +32,55 @@ Open **System Settings → Window Management → kTile**. There you can:
 - Assign a **shortcut per region** using the standard key-sequence picker
 - In the **General** tab, optionally set shortcuts for **opening kTile settings** and **opening the region picker** (visual grid overlay)
 
-Regions are stored in `~/.config/kwinrc` under `[Script-org.kde.ktile]`; the session helper reads the same keys for the picker preview.
+<table>
+    <tr>
+        <td width="50%">
+            <a href="https://github.com/user-attachments/assets/2575b258-5dd1-4228-b343-f62e0393bd83">
+                <img width="794" height="282" alt="Screenshot_20260518_140005-thumb" src="https://github.com/user-attachments/assets/628118d8-8f65-4bb6-bf44-f5747476d944" />
+            </a>
+        </td>
+        <td width="50%">
+            <a href="https://github.com/user-attachments/assets/6c106aaf-9fb2-42b2-ae78-b5e710feace1">
+                <img width="794" height="282" alt="Screenshot_20260518_140021-thumb" src="https://github.com/user-attachments/assets/27e0faa5-6d7a-474f-b3e0-a3ba1e5a7a05" />
+            </a>
+        </td>
+    </tr>
+    <tr>
+        <td width="50%" align="center"><strong>Define Custom Regions</strong></td>
+        <td width="50%" align="center"><strong>Select Region Options</strong></td>
+    </tr>
+</table>
 
-<img width="1060" height="629" alt="Screenshot General" src="https://github.com/user-attachments/assets/89adc006-c173-4a5f-b8ab-4fe89288e8c2" />
+<table>
+    <tr>
+        <td width="50%">
+            <a href="https://github.com/user-attachments/assets/de741c75-d9ec-430f-9463-82dbf1ba863d">
+                <img width="794" height="282" alt="Screenshot_20260518_140034-thumb" src="https://github.com/user-attachments/assets/bcea5f5e-e4af-4f6b-9323-ad198be12bd4" />
+            </a>
+        </td>
+        <td width="50%">
+            <a href="https://github.com/user-attachments/assets/ff426aa9-55c5-468a-aff8-9a55407e1c16">
+                <img width="794" height="282" alt="Screenshot_20260518_140044-thumb" src="https://github.com/user-attachments/assets/9dc8b30a-2f8e-46dd-a8e9-0939c3680eb6" />
+            </a>
+        </td>
+    </tr>
+    <tr>
+        <td width="50%" align="center"><strong>Draw Region Options</strong></td>
+        <td width="50%" align="center"><strong>General Settings</strong></td>
+    </tr>
+</table>
+
+Regions are stored in `~/.config/kwinrc` under `[Script-org.kde.ktile]`; the session helper reads the same keys for the picker preview.
 
 ## Usage
 
 **Direct snap:** Focus a normal window and press a region’s shortcut to snap it into that region.
 
-**Region picker:** Press the “open region picker” shortcut (General tab). A dimmed overlay shows region thumbnails; click one to snap the active window. Dismiss with **Escape**, the panel **close** button, or a click on the dimmed area outside the panel.
+**Region selector:** Press the “Open Region Selector” shortcut (Region Selector tab). A dimmed overlay shows region thumbnails; click one to snap the active window. Dismiss with **Escape**, the panel **close** button, or a click on the dimmed area outside the panel.
 
 If behavior looks wrong after install or upgrade, enable **kTile** again under **System Settings → Window Management → KWin Scripts**, ensure **ktile-session-helper** is running, or sign out and back in once.
 
-**Duplicate shortcuts in Keyboard settings** (each `kTile: …` action listed twice) can happen when old `kglobalshortcutsrc` entries stack on top of the KWin script. Run `./scripts/purge-ktile-shortcuts.sh`, reinstall or reload the KWin script, then open the kTile KCM and click **Apply** once.
+[screencast.webm](https://github.com/user-attachments/assets/dad767cd-8ef5-4cc4-9a18-262eb9eaa43e)
 
 ## Packaging
 
@@ -73,57 +109,3 @@ After install, `ktile-session-helper` should autostart at login (`.desktop` + D-
 ## License
 
 GPL-2.0-or-later — see [LICENSE](LICENSE).
-
-## Examples
-
-[Screencast](https://github.com/user-attachments/assets/bf2ab0af-93f8-4ff2-9a5b-3bc546033659)
-
-<table>
-    <tr>
-        <td width="50%">
-            <a href="https://github.com/user-attachments/assets/2575b258-5dd1-4228-b343-f62e0393bd83">
-                <img width="794" height="282" alt="Screenshot_20260518_140005-thumb" src="https://github.com/user-attachments/assets/628118d8-8f65-4bb6-bf44-f5747476d944" />
-            </a>
-        </td>
-        <td width="50%">
-            <a href="https://github.com/user-attachments/assets/6c106aaf-9fb2-42b2-ae78-b5e710feace1">
-                <img width="794" height="282" alt="Screenshot_20260518_140021-thumb" src="https://github.com/user-attachments/assets/27e0faa5-6d7a-474f-b3e0-a3ba1e5a7a05" />
-            </a>
-        </td>
-    </tr>
-    <tr>
-        <td width="50%">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt.</td>
-        <td width="50%">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt.</td>
-    </tr>
-</table>
-
-<table>
-    <tr>
-        <td width="50%">
-            <a href="https://github.com/user-attachments/assets/de741c75-d9ec-430f-9463-82dbf1ba863d">
-                <img width="794" height="282" alt="Screenshot_20260518_140034-thumb" src="https://github.com/user-attachments/assets/bcea5f5e-e4af-4f6b-9323-ad198be12bd4" />
-            </a>
-        </td>
-        <td width="50%">
-            <a href="https://github.com/user-attachments/assets/ff426aa9-55c5-468a-aff8-9a55407e1c16">
-                <img width="794" height="282" alt="Screenshot_20260518_140044-thumb" src="https://github.com/user-attachments/assets/9dc8b30a-2f8e-46dd-a8e9-0939c3680eb6" />
-            </a>
-        </td>
-    </tr>
-    <tr>
-        <td width="50%">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt.</td>
-        <td width="50%">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt.</td>
-    </tr>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
