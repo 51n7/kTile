@@ -24,14 +24,12 @@
 
 ## Configuration
 
-Open **System Settings → Window Management → kTile** (or run `kcmshell6 kcm_ktile` for a compact standalone window). Settings are grouped into four tabs:
+Open **System Settings → Window Management → kTile**. Settings are grouped into four tabs:
 
-- **Regions** — Add, remove, and reorder regions (drag-and-drop). Edit each region on the shared grid editor (columns, rows, and gap define how rectangles map to the screen). Assign a **keyboard shortcut per region**. Use **Export** / **Import** in **General** to back up or restore your layout.
-- **Region Selector** — Shortcut to open the visual region picker, overlay opacity, optional header bar, and auto-close timeout (0 = never).
-- **Draw Region** — Shortcut to draw a snap rectangle on screen, overlay opacity, optional grid lines while selecting, and auto-close timeout.
-- **General** — Shortcuts for **Open kTile Settings** and **Move window to next screen**, plus export/import of all kTile settings.
-
-Regions and overlay options are stored in `~/.config/kwinrc` under `[Script-org.kde.ktile]`; the session helper reads the same keys for the picker and draw-region overlays.
+- **Regions** — Region list, per-region shortcuts, and grid editor for layout and snap targets
+- **Region Selector** — Global shortcut, overlay opacity, header visibility, and auto-close timeout (0 = never)
+- **Draw Region** — Shortcut to open on-screen selection, overlay opacity, grid lines, and auto-close timeout (0 = never)
+- **General** — Shortcuts for **Open kTile Settings** and **Move window to next screen**, plus export/import of all kTile settings
 
 <table>
     <tr>
@@ -47,8 +45,8 @@ Regions and overlay options are stored in `~/.config/kwinrc` under `[Script-org.
         </td>
     </tr>
     <tr>
-        <td width="50%" align="center"><strong>Regions</strong><br/>Region list, per-region shortcuts, and grid editor for layout and snap targets.</td>
-        <td width="50%" align="center"><strong>Region Selector</strong><br/>Global shortcut, overlay opacity, header visibility, and idle auto-close for the picker.</td>
+        <td width="50%" align="center"><strong>Regions</strong></td>
+        <td width="50%" align="center"><strong>Region Selector</strong></td>
     </tr>
 </table>
 
@@ -66,10 +64,12 @@ Regions and overlay options are stored in `~/.config/kwinrc` under `[Script-org.
         </td>
     </tr>
     <tr>
-        <td width="50%" align="center"><strong>Draw Region</strong><br/>Shortcut to open on-screen selection, overlay opacity, grid lines, and auto-close.</td>
-        <td width="50%" align="center"><strong>General</strong><br/>Settings and “move to next screen” shortcuts, plus export/import of your configuration.</td>
+        <td width="50%" align="center"><strong>Draw Region</strong></td>
+        <td width="50%" align="center"><strong>General</strong></td>
     </tr>
 </table>
+
+Regions and overlay options are stored in `~/.config/kwinrc` under `[Script-org.kde.ktile]`; the session helper reads the same keys for the picker and draw-region overlays.
 
 ## Usage
 
@@ -79,13 +79,28 @@ Regions and overlay options are stored in `~/.config/kwinrc` under `[Script-org.
 
 **Draw region** — Press the shortcut configured under **Draw Region** (or the rectangle icon in the region selector header). Drag on the dimmed overlay to define a rectangle; release to snap the focused window. If the drawn area matches a saved region, kTile uses that region’s shortcut; otherwise it applies the custom rectangle. Optional grid lines help align to your **Regions** grid. **Escape** cancels. Only one overlay is active at a time: opening draw region closes the region selector, and vice versa.
 
-**Other shortcuts** (**General** tab) — **Open kTile Settings** launches the KCM; **Move window to next screen** calls KWin’s slot-to-next-screen for the active window.
-
-After changing settings in the KCM, click **Apply** so the KWin script reloads shortcuts and overlay options.
-
-If behavior looks wrong after install or upgrade, enable **kTile** again under **System Settings → Window Management → KWin Scripts**, ensure **ktile-session-helper** is running (`pgrep -a ktile-session-helper`), or sign out and back in once.
+<table>
+    <tr>
+        <td width="50%">
+            <a href="https://github.com/user-attachments/assets/51bda717-0445-4fbd-9f46-8467fd79029d">
+                <img width="794" height="282" alt="Screenshot_20260518_154829-thumb" src="https://github.com/user-attachments/assets/6162e724-c20f-4efb-9f09-ad6c9dfb64ff" />
+            </a>
+        </td>
+        <td width="50%">
+            <a href="https://github.com/user-attachments/assets/a6fbdd28-86ba-4801-94a9-4ddf0c13cf50">
+                <img width="794" height="282" alt="Screenshot_20260518_154933-thumb" src="https://github.com/user-attachments/assets/48919155-e5ef-4ea9-ae4f-5b39a6c8a79e" />
+            </a>
+        </td>
+    </tr>
+    <tr>
+        <td width="50%" align="center"><strong>Region Selector</strong></td>
+        <td width="50%" align="center"><strong>Draw Region</strong></td>
+    </tr>
+</table>
 
 [screencast.webm](https://github.com/user-attachments/assets/dad767cd-8ef5-4cc4-9a18-262eb9eaa43e)
+
+If behavior looks wrong after install or upgrade, enable **kTile** again under **System Settings → Window Management → KWin Scripts**, ensure **ktile-session-helper** is running (`pgrep -a ktile-session-helper`), or sign out and back in once.
 
 ## Packaging
 
@@ -114,22 +129,3 @@ After install, `ktile-session-helper` should autostart at login (`.desktop` + D-
 ## License
 
 GPL-2.0-or-later — see [LICENSE](LICENSE).
-
-<table>
-    <tr>
-        <td width="50%">
-            <a href="https://github.com/user-attachments/assets/51bda717-0445-4fbd-9f46-8467fd79029d">
-                <img width="794" height="282" alt="Screenshot_20260518_154829-thumb" src="https://github.com/user-attachments/assets/6162e724-c20f-4efb-9f09-ad6c9dfb64ff" />
-            </a>
-        </td>
-        <td width="50%">
-            <a href="https://github.com/user-attachments/assets/a6fbdd28-86ba-4801-94a9-4ddf0c13cf50">
-                <img width="794" height="282" alt="Screenshot_20260518_154933-thumb" src="https://github.com/user-attachments/assets/48919155-e5ef-4ea9-ae4f-5b39a6c8a79e" />
-            </a>
-        </td>
-    </tr>
-    <tr>
-        <td width="50%" align="center"><strong>Regions</strong><br/>Region list, per-region shortcuts, and grid editor for layout and snap targets.</td>
-        <td width="50%" align="center"><strong>Region Selector</strong><br/>Global shortcut, overlay opacity, header visibility, and idle auto-close for the picker.</td>
-    </tr>
-</table>
