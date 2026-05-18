@@ -84,6 +84,7 @@ Regions and overlay options are stored in `~/.config/kwinrc` under `[Script-org.
         <td width="50%">
             <a href="https://github.com/user-attachments/assets/51bda717-0445-4fbd-9f46-8467fd79029d">
                 <img width="794" height="282" alt="Screenshot_20260518_154829-thumb" src="https://github.com/user-attachments/assets/6162e724-c20f-4efb-9f09-ad6c9dfb64ff" />
+               <!-- <img width="1040" height="563" alt="Screenshot_20260518_154829-small" src="https://github.com/user-attachments/assets/aa00b119-a4d3-47e0-9acd-18664e808a57" /> -->
             </a>
         </td>
         <td width="50%">
