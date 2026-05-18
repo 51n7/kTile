@@ -5,9 +5,9 @@
 # Replace Source0 with your tarball URL or use forge macros after publishing.
 
 Name:           ktile
-Version:        0.1.0
+Version:        0.1.1
 # Packaging iteration — canonical value is packaging/PACKAGING_RELEASE (build.sh substitutes when copying to rpmbuild).
-%global packrel 9
+%global packrel 1
 Release:        %{packrel}%{?dist}
 Summary:        Custom window snap regions for KDE Plasma (KWin script + KCM)
 

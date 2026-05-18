@@ -68,9 +68,16 @@ Use the interactive helper (same **Build dependencies** as above, plus your dist
 ./build.sh
 ```
 
-The script reads the version from `project(kTile VERSION …)` in the top-level `CMakeLists.txt`, then lets you build:
+The script reads the version from `project(kTile VERSION …)` in the top-level `CMakeLists.txt`, then asks whether this build is a **rebuild** or a **new upstream version**:
+
+- **Rebuild** — increments `packaging/PACKAGING_RELEASE` only (RPM Release / Debian revision / Arch `pkgrel`) and syncs `packaging/fedora/ktile.spec` and `packaging/arch/PKGBUILD`.
+- **New version** — bumps the patch version in `CMakeLists.txt` (e.g. `0.1.0` → `0.1.1`, or enter another `MAJOR.MINOR.PATCH`), resets `PACKAGING_RELEASE` to `1`, and updates the Fedora spec and Arch `PKGBUILD`.
+- **Skip** — leaves version files unchanged.
+
+After that, choose RPM, DEB, or Arch:
 
 - **RPM** — writes `ktile-<version>.tar.gz` under `~/rpmbuild/SOURCES` (or `$RPMBUILD_TOP` if set), copies `packaging/fedora/ktile.spec`, and runs `rpmbuild -ba`. Warns if the spec’s `Version:` does not match CMake.
+
 - **DEB** — Debian metadata lives in `packaging/debian/`. The build script symlinks `./debian` there and runs `fakeroot dpkg-buildpackage -b -us -uc`. Build products (`.deb`, `.buildinfo`, `.changes`) are first emitted next to the repo, then **moved to `~/debian/`** (same role as `~/rpmbuild` for RPM). Warns if `packaging/debian/changelog` does not start with `ktile (<version>-…)`. Override the destination with `KTILE_DEB_OUT`.
 - **Arch** — builds in a temp dir with `packaging/arch/PKGBUILD`, refreshes `pkgver` and `sha256sums`, then runs `makepkg -f`. Resulting `*.pkg.tar.zst` are left in that temp directory (the script prints the path).
 

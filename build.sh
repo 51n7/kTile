@@ -34,12 +34,128 @@ extract_packaging_release() {
     printf '%s' "$line"
 }
 
+bump_patch_version() {
+    local v="$1"
+    if [[ "$v" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+        printf '%s.%s.%s' "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" "$((BASH_REMATCH[3] + 1))"
+        return 0
+    fi
+    return 1
+}
+
+write_packaging_release() {
+    printf '%s\n' "$1" >"${ROOT}/packaging/PACKAGING_RELEASE"
+}
+
+write_cmake_version() {
+    local v="$1"
+    local spec="${ROOT}/CMakeLists.txt"
+    if ! grep -q '^project(kTile VERSION ' "$spec"; then
+        echo "error: could not find project(kTile VERSION …) in CMakeLists.txt" >&2
+        exit 1
+    fi
+    sed -i "s/^project(kTile VERSION [0-9][0-9.]* LANGUAGES CXX)/project(kTile VERSION ${v} LANGUAGES CXX)/" "$spec"
+}
+
+write_spec_version() {
+    local v="$1"
+    local spec="${ROOT}/packaging/fedora/ktile.spec"
+    [[ -f "$spec" ]] || {
+        echo "error: missing ${spec}" >&2
+        exit 1
+    }
+    sed -i "s/^Version:.*/Version:        ${v}/" "$spec"
+}
+
+write_spec_packrel() {
+    local n="$1"
+    local spec="${ROOT}/packaging/fedora/ktile.spec"
+    sed -i "s/^%global packrel .*/%global packrel ${n}/" "$spec"
+}
+
+write_pkgbuild_versions() {
+    local v="$1" rel="$2"
+    local pkgbuild="${ROOT}/packaging/arch/PKGBUILD"
+    [[ -f "$pkgbuild" ]] || return 0
+    sed -i "s/^pkgver=.*/pkgver=${v}/" "$pkgbuild"
+    sed -i "s/^pkgrel=.*/pkgrel=${rel}/" "$pkgbuild"
+}
+
+note_debian_changelog() {
+    local cl="${ROOT}/packaging/debian/changelog"
+    if [[ -f "$cl" ]] && ! deb_changelog_matches; then
+        echo "Note: update ${cl} for ktile (${VERSION}-${PKGREL}) (e.g. dch -v ${VERSION}-${PKGREL})." >&2
+    fi
+}
+
+prompt_release_bump() {
+    local next_patch suggested
+    next_patch="$(bump_patch_version "$VERSION" 2>/dev/null || true)"
+
+    echo
+    echo "Release type for this package build:"
+    echo "  r) Rebuild same upstream version — bump packaging release (${VERSION}-${PKGREL} -> ${VERSION}-$((PKGREL + 1)))"
+    if [[ -n "$next_patch" ]]; then
+        echo "  n) New upstream version — bump to ${next_patch} and reset packaging release to 1"
+    else
+        echo "  n) New upstream version — enter a version and reset packaging release to 1"
+    fi
+    echo "  s) Skip — keep ${VERSION}-${PKGREL} (no file changes)"
+    read -r -p "Choice [r/n/s]: " rel_choice || true
+
+    case "${rel_choice,,}" in
+        r)
+            PKGREL=$((PKGREL + 1))
+            write_packaging_release "$PKGREL"
+            write_spec_packrel "$PKGREL"
+            write_pkgbuild_versions "$VERSION" "$PKGREL"
+            echo "Set packaging release to ${PKGREL} (package id ${VERSION}-${PKGREL})."
+            ;;
+        n)
+            suggested="$next_patch"
+            if [[ -z "$suggested" ]]; then
+                read -r -p "New upstream version (e.g. 0.2.0): " suggested || true
+            else
+                read -r -p "New upstream version [${suggested}]: " custom || true
+                if [[ -n "${custom:-}" ]]; then
+                    suggested="$custom"
+                fi
+            fi
+            if [[ ! "$suggested" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                echo "error: version must look like MAJOR.MINOR.PATCH (got '${suggested}')." >&2
+                exit 1
+            fi
+            VERSION="$suggested"
+            PKGREL=1
+            write_cmake_version "$VERSION"
+            write_spec_version "$VERSION"
+            write_packaging_release 1
+            write_spec_packrel 1
+            write_pkgbuild_versions "$VERSION" 1
+            echo "Set upstream version to ${VERSION} and packaging release to 1."
+            ;;
+        s | '')
+            echo "Keeping ${VERSION}-${PKGREL}."
+            ;;
+        *)
+            echo "error: invalid release choice '${rel_choice}'." >&2
+            exit 1
+            ;;
+    esac
+    note_debian_changelog
+}
+
 VERSION="$(extract_version)"
 PKGREL="$(extract_packaging_release)"
 
 echo "kTile — local package build"
-echo "Upstream version (CMakeLists.txt): ${VERSION}"
-echo "Packaging iteration (packaging/PACKAGING_RELEASE): ${PKGREL} (RPM Release and Debian package revision)"
+echo "Current upstream version (CMakeLists.txt): ${VERSION}"
+echo "Current packaging release (packaging/PACKAGING_RELEASE): ${PKGREL}"
+
+prompt_release_bump
+
+echo
+echo "Building as ${VERSION}-${PKGREL} (RPM Release / Debian revision / Arch pkgrel)"
 echo
 echo "  1) RPM   Fedora / RHEL-style (rpmbuild; packaging/fedora/ktile.spec)"
 echo "  2) DEB   Debian / Ubuntu (dpkg-buildpackage; packaging/debian)"

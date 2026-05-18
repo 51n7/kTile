@@ -3,8 +3,8 @@
 # Used by ./build.sh (option 3): pkgver, pkgrel, and sha256sums are rewritten before makepkg.
 
 pkgname=ktile
-pkgver=0.1.0
-pkgrel=9
+pkgver=0.1.1
+pkgrel=1
 pkgdesc='Custom window snap regions for KDE Plasma (KWin script + KCM)'
 arch=('x86_64' 'aarch64')
 url='https://github.com/51n7/kTile'
