@@ -41,17 +41,31 @@ deb_changelog_matches() {
     [[ "$cl" =~ ^ktile\ \(${VERSION}-${PKGREL}\) ]]
 }
 
-# Prepend a stanza so the first line matches ktile (VERSION-PKGREL) … (keeps DEB in sync with RPM/Arch).
+# Prepend a stanza so the first line matches ktile (VERSION-PKGREL) … (DEB only; keeps Debian id aligned with RPM/Arch).
+# Requires packaging/debian/ (called from build_deb only — do not require debian metadata for RPM/Arch on Fedora).
 sync_debian_changelog() {
     local cl="${ROOT}/packaging/debian/changelog"
-    if [[ ! -f "$cl" ]]; then
-        echo "error: missing ${cl}" >&2
+    local debci="${ROOT}/packaging/debian/control"
+    local tmp datestamp
+    if [[ ! -f "$debci" ]]; then
+        echo "error: DEB build needs ${debci} (use a full clone with packaging/debian/)." >&2
         exit 1
+    fi
+    if [[ ! -f "$cl" ]]; then
+        datestamp="$(date -R 2>/dev/null || date)"
+        {
+            echo "ktile (${VERSION}-${PKGREL}) unstable; urgency=medium"
+            echo
+            echo "  * Package build (${VERSION}-${PKGREL})."
+            echo
+            echo " -- kTile upstream <packaging@ktile.local>  ${datestamp}"
+        } >"$cl"
+        echo "Created ${cl}." >&2
+        return 0
     fi
     if deb_changelog_matches; then
         return 0
     fi
-    local tmp datestamp
     tmp="$(mktemp "${TMPDIR:-/tmp}/ktile-changelog.XXXXXX")"
     datestamp="$(date -R 2>/dev/null || date)"
     {
@@ -168,7 +182,6 @@ prompt_release_bump() {
             exit 1
             ;;
     esac
-    sync_debian_changelog
 }
 
 VERSION="$(extract_version)"
