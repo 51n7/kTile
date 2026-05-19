@@ -4,6 +4,8 @@
 
 <img width="1149" height="933" alt="Screenshot Regions" src="https://github.com/user-attachments/assets/2575b258-5dd1-4228-b343-f62e0393bd83" />
 
+[screencast](https://github.com/user-attachments/assets/5f8ed198-fcc5-4156-af02-c7a826ffb229)
+
 ## Quick install
 
 1. Grab your build file from the `dist` folder
@@ -99,7 +101,7 @@ Regions and overlay options are stored in `~/.config/kwinrc` under `[Script-org.
     </tr>
 </table>
 
-[screencast.webm](https://github.com/user-attachments/assets/dad767cd-8ef5-4cc4-9a18-262eb9eaa43e)
+<!-- [screencast.webm](https://github.com/user-attachments/assets/dad767cd-8ef5-4cc4-9a18-262eb9eaa43e) -->
 
 If behavior looks wrong after install or upgrade, enable **kTile** again under **System Settings → Window Management → KWin Scripts**, ensure **ktile-session-helper** is running (`pgrep -a ktile-session-helper`), or sign out and back in once.
 
