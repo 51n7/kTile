@@ -1,12 +1,10 @@
 # kTile 2.0
 
-**kTile** snaps windows to custom screen regions on **KDE Plasma 6**. Each region gets a **shortcut**; press it with a window focused to move and resize that window there. You can also pick a region from a **preview modal** or **draw** a region on screen instead of using a fixed grid. See usage section below for screenshot examples.
+**kTile** snaps windows to custom screen regions on **KDE Plasma 6**. Each region gets a **shortcut**; press it with a window focused to move and resize that window there. You can also pick a region from a [preview modal](https://github.com/user-attachments/assets/51bda717-0445-4fbd-9f46-8467fd79029d) or [draw a region](https://github.com/user-attachments/assets/48919155-e5ef-4ea9-ae4f-5b39a6c8a79e) on screen instead of using a fixed grid.
 
-<!-- Hyphens in the asset id are percent-encoded so GitHub's README renderer does not replace this href with an inline video player. The URL still resolves the same in browsers. -->
 [View Demo](https://github.com/user-attachments/assets/5f8ed198%2Dfcc5%2D4156%2Daf02%2Dc7a826ffb229)
 
 <img width="1149" height="933" alt="Screenshot Regions" src="https://github.com/user-attachments/assets/2575b258-5dd1-4228-b343-f62e0393bd83" />
-<!-- [screencast](https://github.com/user-attachments/assets/5f8ed198-fcc5-4156-af02-c7a826ffb229) -->
 
 ## Quick install
 
