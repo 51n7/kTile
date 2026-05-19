@@ -2,9 +2,8 @@
 
 **kTile** snaps windows to custom screen regions on **KDE Plasma 6**. Each region gets a **shortcut**; press it with a window focused to move and resize that window there. You can also pick a region from an **overlay** or **draw** one on screen instead of using a fixed grid.
 
-<!-- <img width="1149" height="933" alt="Screenshot Regions" src="https://github.com/user-attachments/assets/2575b258-5dd1-4228-b343-f62e0393bd83" /> -->
-
-[screencast](https://github.com/user-attachments/assets/5f8ed198-fcc5-4156-af02-c7a826ffb229)
+<img width="1149" height="933" alt="Screenshot Regions" src="https://github.com/user-attachments/assets/2575b258-5dd1-4228-b343-f62e0393bd83" />
+<!-- [screencast](https://github.com/user-attachments/assets/5f8ed198-fcc5-4156-af02-c7a826ffb229) -->
 
 ## Quick install
 
@@ -77,9 +76,9 @@ Regions and overlay options are stored in `~/.config/kwinrc` under `[Script-org.
 
 **Direct snap** — Focus a normal window and press a region’s shortcut to move and resize it into that region.
 
-**Region selector** — Press the shortcut configured under **Region Selector**. A dimmed fullscreen overlay shows thumbnails of your saved regions; click one to snap the focused window. The optional header includes **Draw region**, **Settings**, and **Close**. Dismiss with **Escape**, **Close**, or a click outside the panel. The overlay auto-closes after the configured idle time unless you set auto-close to 0 (never).
+**Region selector** — Press the shortcut configured under **Region Selector**. A dimmed fullscreen overlay shows thumbnails of your saved regions; click one to snap the focused window. The overlay auto-closes after the configured idle time unless you set auto-close to 0 (never).
 
-**Draw region** — Press the shortcut configured under **Draw Region** (or the rectangle icon in the region selector header). Drag on the dimmed overlay to define a rectangle; release to snap the focused window. If the drawn area matches a saved region, kTile uses that region’s shortcut; otherwise it applies the custom rectangle. Optional grid lines help align to your **Regions** grid. **Escape** cancels. Only one overlay is active at a time: opening draw region closes the region selector, and vice versa.
+**Draw region** — Press the shortcut configured under **Draw Region** (or the rectangle icon in the region selector header). Drag on the dimmed overlay to define a rectangle; release to snap the focused window.
 
 <table>
     <tr>
