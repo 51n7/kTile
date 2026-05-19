@@ -121,3 +121,16 @@ If **`dpkg`** reports missing dependencies, run **`sudo apt-get install -f`** af
 
 Diagnostics: `~/.cache/ktile-session-helper.log` (DBus and launcher messages).
 
+## Architecture
+
+kTile is split into **three parts** in this repository (one CMake build installs all of them):
+
+| Part | Location | Role |
+|------|----------|------|
+| **KCM** | `kcm/` | System Settings UI: regions, region selector, draw region, and general shortcuts |
+| **KWin script** | `kwin-script/` | Runs in the compositor: snap windows, register global shortcuts, call D-Bus for overlays and settings |
+| **Session helper** | `session-helper/` | Autostart app (`ktile-session-helper`): region-picker and draw-region overlays, D-Bus service `org.kde.ktile` |
+
+Overlays are **not** drawn inside KWin or the KCM. The KWin script invokes D-Bus (`showRegionPicker`, `prepareDrawRegion`, `open`, and related methods); the session helper shows the fullscreen UI, then triggers the appropriate shortcut or snap data so KWin moves your **focused** window. That separation keeps the compositor script small and lets overlays handle focus and **Escape** locally (without a permanent global Esc binding that would block KRunner).
+
+After install, `ktile-session-helper` should autostart at login (`.desktop` + D-Bus service). If overlays or “open settings” do nothing, check that the helper is running: `pgrep -a ktile-session-helper`.

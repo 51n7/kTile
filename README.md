@@ -1,6 +1,6 @@
 # kTile 2.0
 
-**kTile** is a snap-windows helper for **KDE Plasma 6**. You define rectangular **regions** on your displays (as fractions of the screen) and assign a **keyboard shortcut** to each. With a window focused, that shortcut moves and resizes it into the matching region—like tiling presets, but using your own layout instead of a fixed grid. You can also open a **region selector** overlay to pick a region visually, or **draw a region** on screen and snap the window to whatever rectangle you define.
+**kTile** snaps windows to custom screen regions on **KDE Plasma 6**. Each region gets a **shortcut**; press it with a window focused to move and resize that window there. You can also pick a region from an **overlay** or **draw** one on screen instead of using a fixed grid.
 
 <!-- <img width="1149" height="933" alt="Screenshot Regions" src="https://github.com/user-attachments/assets/2575b258-5dd1-4228-b343-f62e0393bd83" /> -->
 
@@ -114,20 +114,6 @@ See [PACKAGING.md](PACKAGING.md) to build installable packages on your machine (
 ```
 
 The script is interactive: it picks the package type, creates the source tarball where needed, and runs `rpmbuild`, `dpkg-buildpackage`, or `makepkg`. You do not need a remote repository to package locally (manual tarball + spec steps are also documented in `PACKAGING.md` if you prefer not to use `build.sh`).
-
-## Architecture
-
-kTile is split into **three parts** in this repository (one CMake build installs all of them):
-
-| Part | Location | Role |
-|------|----------|------|
-| **KCM** | `kcm/` | System Settings UI: regions, region selector, draw region, and general shortcuts |
-| **KWin script** | `kwin-script/` | Runs in the compositor: snap windows, register global shortcuts, call D-Bus for overlays and settings |
-| **Session helper** | `session-helper/` | Autostart app (`ktile-session-helper`): region-picker and draw-region overlays, D-Bus service `org.kde.ktile` |
-
-Overlays are **not** drawn inside KWin or the KCM. The KWin script invokes D-Bus (`showRegionPicker`, `prepareDrawRegion`, `open`, and related methods); the session helper shows the fullscreen UI, then triggers the appropriate shortcut or snap data so KWin moves your **focused** window. That separation keeps the compositor script small and lets overlays handle focus and **Escape** locally (without a permanent global Esc binding that would block KRunner).
-
-After install, `ktile-session-helper` should autostart at login (`.desktop` + D-Bus service). If overlays or “open settings” do nothing, check that the helper is running: `pgrep -a ktile-session-helper`.
 
 ## License
 
