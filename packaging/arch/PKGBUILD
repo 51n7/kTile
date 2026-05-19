@@ -4,7 +4,7 @@
 
 pkgname=ktile
 pkgver=0.1.1
-pkgrel=1
+pkgrel=2
 pkgdesc='Custom window snap regions for KDE Plasma (KWin script + KCM)'
 arch=('x86_64' 'aarch64')
 url='https://github.com/51n7/kTile'
