@@ -23,7 +23,7 @@
    sudo dpkg -i ~/dist/ktile-*.deb
    ```
 
-   To install for other distros, start from "Install build dependencies" in [PACKAGING.md](PACKAGING.md). You might need to log out and back in once so System Settings launched from the app menu sees the kTile (KCM) settings.
+   To install for other distros, start from "Install build dependencies" in [PACKAGING.md](PACKAGING.md#install-build-dependencies). You might need to log out and back in once so System Settings launched from the app menu sees the kTile (KCM) settings.
 
 ## Configuration
 
