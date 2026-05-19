@@ -34,6 +34,39 @@ extract_packaging_release() {
     printf '%s' "$line"
 }
 
+# Uses global VERSION and PKGREL (must be set before call).
+deb_changelog_matches() {
+    local cl
+    cl=$(head -1 "${ROOT}/packaging/debian/changelog" 2>/dev/null || true)
+    [[ "$cl" =~ ^ktile\ \(${VERSION}-${PKGREL}\) ]]
+}
+
+# Prepend a stanza so the first line matches ktile (VERSION-PKGREL) … (keeps DEB in sync with RPM/Arch).
+sync_debian_changelog() {
+    local cl="${ROOT}/packaging/debian/changelog"
+    if [[ ! -f "$cl" ]]; then
+        echo "error: missing ${cl}" >&2
+        exit 1
+    fi
+    if deb_changelog_matches; then
+        return 0
+    fi
+    local tmp datestamp
+    tmp="$(mktemp "${TMPDIR:-/tmp}/ktile-changelog.XXXXXX")"
+    datestamp="$(date -R 2>/dev/null || date)"
+    {
+        echo "ktile (${VERSION}-${PKGREL}) unstable; urgency=medium"
+        echo
+        echo "  * Sync Debian changelog with packaging (upstream ${VERSION}, release ${PKGREL})."
+        echo
+        echo " -- kTile upstream <packaging@ktile.local>  ${datestamp}"
+        echo
+        cat "$cl"
+    } >"$tmp"
+    mv -f "$tmp" "$cl"
+    echo "Updated packaging/debian/changelog to start with ktile (${VERSION}-${PKGREL})." >&2
+}
+
 bump_patch_version() {
     local v="$1"
     if [[ "$v" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
@@ -79,13 +112,6 @@ write_pkgbuild_versions() {
     [[ -f "$pkgbuild" ]] || return 0
     sed -i "s/^pkgver=.*/pkgver=${v}/" "$pkgbuild"
     sed -i "s/^pkgrel=.*/pkgrel=${rel}/" "$pkgbuild"
-}
-
-note_debian_changelog() {
-    local cl="${ROOT}/packaging/debian/changelog"
-    if [[ -f "$cl" ]] && ! deb_changelog_matches; then
-        echo "Note: update ${cl} for ktile (${VERSION}-${PKGREL}) (e.g. dch -v ${VERSION}-${PKGREL})." >&2
-    fi
 }
 
 prompt_release_bump() {
@@ -142,7 +168,7 @@ prompt_release_bump() {
             exit 1
             ;;
     esac
-    note_debian_changelog
+    sync_debian_changelog
 }
 
 VERSION="$(extract_version)"
@@ -213,26 +239,20 @@ build_rpm() {
     echo "Built SRPM: ${top}/SRPMS/"
 }
 
-deb_changelog_matches() {
-    local cl
-    cl=$(head -1 "${ROOT}/packaging/debian/changelog")
-    [[ "$cl" =~ ^ktile\ \(${VERSION}-${PKGREL}\) ]]
-}
-
 build_deb() {
     need_cmd dpkg-buildpackage
     if ! command -v fakeroot >/dev/null 2>&1; then
         echo "error: fakeroot not found (e.g. apt install fakeroot)." >&2
         exit 1
     fi
+    sync_debian_changelog
     # dpkg-buildpackage expects ./debian at the repo root; canonical files live under packaging/debian/.
     # If a plain directory named debian/ already exists, ln would put a link inside it instead of replacing it.
     rm -rf "${ROOT}/debian"
     ln -sfn "${ROOT}/packaging/debian" "${ROOT}/debian"
     if ! deb_changelog_matches; then
-        echo "warning: packaging/debian/changelog does not start with ktile (${VERSION}-${PKGREL}) — bump packaging/PACKAGING_RELEASE and dch, or edit by hand." >&2
-        read -r -p "Continue anyway? [y/N] " a || true
-        [[ "${a:-}" =~ ^[yY]$ ]] || exit 1
+        echo "error: packaging/debian/changelog still does not match ktile (${VERSION}-${PKGREL}) after sync." >&2
+        exit 1
     fi
     if ! (cd "${ROOT}" && dpkg-checkbuilddeps); then
         cat >&2 <<'EOF'

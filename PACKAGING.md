@@ -74,11 +74,13 @@ The script reads the version from `project(kTile VERSION …)` in the top-level 
 - **New version** — bumps the patch version in `CMakeLists.txt` (e.g. `0.1.0` → `0.1.1`, or enter another `MAJOR.MINOR.PATCH`), resets `PACKAGING_RELEASE` to `1`, and updates the Fedora spec and Arch `PKGBUILD`.
 - **Skip** — leaves version files unchanged.
 
+After any choice (**rebuild**, **new version**, or **skip**), **`./build.sh` updates `packaging/debian/changelog`** when its first line does not match **`ktile (<CMake version>-<PACKAGING_RELEASE>)`** — it **prepends** a short stanza so the Debian package id stays aligned with RPM and Arch. Edit the new bullet text by hand if you want a richer changelog message; older stanzas stay below.
+
 After that, choose RPM, DEB, or Arch:
 
 - **RPM** — writes `ktile-<version>.tar.gz` under `~/rpmbuild/SOURCES` (or `$RPMBUILD_TOP` if set), copies `packaging/fedora/ktile.spec`, and runs `rpmbuild -ba`. Warns if the spec’s `Version:` does not match CMake.
 
-- **DEB** — Debian metadata lives in `packaging/debian/`. The build script symlinks `./debian` there and runs `fakeroot dpkg-buildpackage -b -us -uc`. Build products (`.deb`, `.buildinfo`, `.changes`) are first emitted next to the repo, then **moved to `~/debian/`** (same role as `~/rpmbuild` for RPM). Warns if `packaging/debian/changelog` does not start with `ktile (<version>-…)`. Override the destination with `KTILE_DEB_OUT`.
+- **DEB** — Debian metadata lives in `packaging/debian/`. The build script symlinks `./debian` there and runs `fakeroot dpkg-buildpackage -b -us -uc`. Before building, the changelog is synced again if needed. Build products (`.deb`, `.buildinfo`, `.changes`) are first emitted next to the repo, then **moved to `~/debian/`** (same role as `~/rpmbuild` for RPM). Override the destination with `KTILE_DEB_OUT`.
 - **Arch** — builds in a temp dir with `packaging/arch/PKGBUILD`, refreshes `pkgver` and `sha256sums`, then runs `makepkg -f`. Resulting `*.pkg.tar.zst` are left in that temp directory (the script prints the path).
 
 Override the RPM tree if needed:
