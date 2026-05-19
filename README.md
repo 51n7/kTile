@@ -1,8 +1,12 @@
 # kTile 2.0
 
-**kTile** snaps windows to custom screen regions on **KDE Plasma 6**. Each region gets a **shortcut**; press it with a window focused to move and resize that window there. You can also pick a region from a [preview modal](https://github.com/user-attachments/assets/aa00b119%2Da4d3%2D47e0%2D9acd%2D18664e808a57) or [draw a region](https://github.com/user-attachments/assets/48919155%2De5ef%2D4ea9%2Dae4f%2D5b39a6c8a79e) on screen.
+**kTile** snaps windows to custom screen regions on **KDE Plasma 6**. Each region gets a **shortcut**; press it with a window focused to move and resize that window there. You can also pick a region from a [preview modal](https://github.com/user-attachments/assets/51bda717%2D0445%2D4fbd%2D9f46%2D8467fd79029d) or [draw a region](https://github.com/user-attachments/assets/a6fbdd28%2D86ba%2D4801%2D94a9%2D4ddf0c13cf50) on screen.
 
-[View Demo](https://github.com/user-attachments/assets/5f8ed198%2Dfcc5%2D4156%2Daf02%2Dc7a826ffb229) 👀
+<h3 align="center">
+  ⭐ <a href="https://github.com/user-attachments/assets/5f8ed198%2Dfcc5%2D4156%2Daf02%2Dc7a826ffb229">View Demo</a> ⭐
+</h3>
+
+<br />
 
 <img width="1149" height="933" alt="Screenshot Regions" src="https://github.com/user-attachments/assets/2575b258-5dd1-4228-b343-f62e0393bd83" />
 
@@ -17,12 +21,9 @@
 
    # Debian
    sudo dpkg -i ~/dist/ktile-*.deb
-
-   # Arch
-   sudo pacman -U ~/dist/ktile-*.pkg.tar.zst
    ```
 
-   You might need to log out and back in once so System Settings launched from the app menu sees the kTile (KCM) settings.
+   To install for other distros, start from "Install build dependencies" in [PACKAGING.md](PACKAGING.md). You might need to log out and back in once so System Settings launched from the app menu sees the kTile (KCM) settings.
 
 ## Configuration
 
