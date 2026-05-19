@@ -2,7 +2,7 @@
 
 **kTile** is a snap-windows helper for **KDE Plasma 6**. You define rectangular **regions** on your displays (as fractions of the screen) and assign a **keyboard shortcut** to each. With a window focused, that shortcut moves and resizes it into the matching region—like tiling presets, but using your own layout instead of a fixed grid. You can also open a **region selector** overlay to pick a region visually, or **draw a region** on screen and snap the window to whatever rectangle you define.
 
-<img width="1149" height="933" alt="Screenshot Regions" src="https://github.com/user-attachments/assets/2575b258-5dd1-4228-b343-f62e0393bd83" />
+<!-- <img width="1149" height="933" alt="Screenshot Regions" src="https://github.com/user-attachments/assets/2575b258-5dd1-4228-b343-f62e0393bd83" /> -->
 
 [screencast](https://github.com/user-attachments/assets/5f8ed198-fcc5-4156-af02-c7a826ffb229)
 
